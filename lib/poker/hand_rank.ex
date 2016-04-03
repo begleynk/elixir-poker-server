@@ -25,6 +25,8 @@ defmodule Poker.HandRank do
       |> flatten
   end
 
+  #********* Implementations ********#
+
   # Match full houses - eg. 2,2,2 3,3
   # The high card is determined by the group of three
   defp compute_score([%Card{value: value}, %Card{value: value}, %Card{value: value}, 
@@ -182,7 +184,7 @@ defmodule Poker.HandRank do
 
   defp do_rank_scores_by_high_card(scores) do
     Enum.sort_by(scores,
-      fn(score) -> 
+      fn(%HandRank{} = score) -> 
         score.cards |> Enum.map(fn(x) ->
           if x == 1 do
             14
