@@ -1,3 +1,3 @@
 defmodule Poker.Card do
-  defstruct rank: nil, suit: nil
+  defstruct value: nil, suit: nil
 end
