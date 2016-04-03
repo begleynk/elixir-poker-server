@@ -16,13 +16,5 @@ defmodule Poker.Hand do
   def add_card(%Poker.Hand{} = hand, %Poker.Card{} = card) do
     %Poker.Hand{ hand | cards: [card | hand.cards] }
   end
-
-  def value(%Poker.Hand{ cards: cards} = _hand) when length(cards) == 5 do
-    %Poker.HandRank{type: :straight_flush, high_cards: [7]}
-  end
-
-  def value(%Poker.Hand{}) do
-    :invalid
-  end
 end
 
