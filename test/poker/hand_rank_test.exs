@@ -208,7 +208,7 @@ defmodule Poker.HandRankTest do
     assert HandRank.compare([a,b]) == [b,a]
   end
  
-  test "Ace is the highest card" do
+  test "Ace is the highest card when ranking" do
     a = %HandRank{type: :high_card, cards: [1, 7, 6, 5, 4]}
     b = %HandRank{type: :high_card, cards: [10, 7, 6, 5, 4]}
 
