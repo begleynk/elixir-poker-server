@@ -15,12 +15,20 @@ defmodule Poker.Lobby do
     GenServer.call(__MODULE__, :tables)
   end
 
+  def clear do
+    GenServer.call(__MODULE__, :clear)
+  end
+
   def create_table(size: size) do
     GenServer.call(__MODULE__, {:create_table, %{ size: size }})
   end
 
   def handle_call(:tables, _caller, state) do
     {:reply, state, state}
+  end
+
+  def handle_call(:clear, _caller, state) do
+    {:reply, :ok, []}
   end
 
   def handle_call({:create_table, %{ size: size}}, _caller, state) do

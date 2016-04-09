@@ -7,6 +7,10 @@ defmodule Poker do
     import Supervisor.Spec, warn: false
 
     children = [
+      # Start table supervisor
+      supervisor(Poker.TableSupervisor, []),
+      # Star Lobby
+      worker(Poker.Lobby, []),
       # Start the endpoint when the application starts
       supervisor(Poker.Endpoint, []),
       # Start the Ecto repository
