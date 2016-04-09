@@ -10,8 +10,7 @@ config :poker, Poker.Endpoint,
   http: [port: 4000],
   debug_errors: true,
   code_reloader: true,
-  check_origin: false,
-  watchers: [node: ["node_modules/brunch/bin/brunch", "watch", "--stdin"]]
+  check_origin: false
 
 # Watch static and templates for browser reloading.
 config :poker, Poker.Endpoint,

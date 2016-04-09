@@ -1,22 +1,14 @@
 defmodule Poker.Router do
   use Poker.Web, :router
 
-  pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_flash
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-  end
-
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["json", "json-api"]
   end
 
-  scope "/", Poker do
-    pipe_through :browser # Use the default browser stack
+  scope "/api", Poker do
+    pipe_through :api
 
-    get "/", PageController, :index
+    resources "/session", SessionController, only: [:index]
   end
 
   # Other scopes may use custom stacks.

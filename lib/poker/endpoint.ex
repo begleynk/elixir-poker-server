@@ -35,5 +35,6 @@ defmodule Poker.Endpoint do
     key: "_poker_key",
     signing_salt: "c5JEzYI/"
 
+  plug CORSPlug
   plug Poker.Router
 end
