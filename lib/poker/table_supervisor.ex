@@ -19,6 +19,10 @@ defmodule Poker.TableSupervisor do
     Supervisor.start_child(__MODULE__, args)
   end
 
+  def which_children do
+    Supervisor.which_children(__MODULE__)
+  end
+
   defp generate_id do
     "table_" <> (UUID.uuid4(:hex) |> String.slice(0, 8))
   end

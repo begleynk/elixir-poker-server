@@ -10,9 +10,6 @@ defmodule Poker.PokerCase do
         |> Enum.map(fn({_, pid, _, _}) ->
              Supervisor.terminate_child(sup, pid)
            end)
-      
-      # Clear lobby of all tables
-      :ok = Poker.Lobby.clear
     end
     :ok
   end

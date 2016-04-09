@@ -7,10 +7,6 @@ defmodule Poker.Lobby do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  def init(_) do
-    {:ok, []}
-  end
-
   def tables do
     GenServer.call(__MODULE__, :tables)
   end
@@ -23,18 +19,19 @@ defmodule Poker.Lobby do
     GenServer.call(__MODULE__, {:create_table, %{ size: size }})
   end
 
-  def handle_call(:tables, _caller, state) do
-    {:reply, state, state}
+  def handle_call(:tables, _caller, s) do
+    {:reply, do_fetch_tables_states, s}
   end
 
-  def handle_call(:clear, _caller, state) do
-    {:reply, :ok, []}
-  end
-
-  def handle_call({:create_table, %{ size: size}}, _caller, state) do
+  def handle_call({:create_table, %{ size: size}}, _caller, s) do
     {:ok, table} = TableSupervisor.start_child(size: size)
     info = %Table{} = Table.info(table)
 
-    {:reply, {:ok, info}, state ++ [info]}
+    {:reply, {:ok, info}, s}
+  end
+
+  defp do_fetch_tables_states do
+    TableSupervisor.which_children
+      |> Enum.map(fn({_, table, _, _}) -> Table.info(table) end)
   end
 end
