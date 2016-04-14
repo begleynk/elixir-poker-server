@@ -23,8 +23,8 @@ defmodule Poker.Lobby do
     {:reply, do_fetch_tables_states, s}
   end
 
-  def handle_call({:create_table, %{ size: size}}, _caller, s) do
-    {:ok, table} = TableSupervisor.start_child(size: size)
+  def handle_call({:create_table, %{ size: size }}, _caller, s) do
+    {:ok, table} = TableSupervisor.start_child([[size: size]])
     info = %Table{} = Table.info(table)
 
     {:reply, {:ok, info}, s}

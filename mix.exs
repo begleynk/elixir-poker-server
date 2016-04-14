@@ -17,9 +17,19 @@ defmodule Poker.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    [mod: {Poker, []},
-     applications: [:phoenix, :phoenix_html, :cowboy, :logger, :gettext,
-                    :phoenix_ecto, :postgrex]]
+    [
+      mod: {Poker, []},
+      applications: [
+        :phoenix, 
+        :phoenix_html, 
+        :cowboy, 
+        :logger, 
+        :gettext,
+        :phoenix_ecto, 
+        :postgrex,
+        :gproc
+      ]
+    ]
   end
 
   # Specifies which paths to compile per environment.
@@ -39,7 +49,8 @@ defmodule Poker.Mixfile do
       {:gettext, "~> 0.9"},
       {:cowboy, "~> 1.0"},
       {:uuid, "~> 1.1" },
-      {:cors_plug, "~> 1.1"}
+      {:cors_plug, "~> 1.1"},
+      {:gproc, "~> 0.5"}
     ]
   end
 
