@@ -9,7 +9,7 @@ defmodule Poker.TableSupervisor do
   
   def init(_) do
     children = [
-      worker(Table, [[generate_id]])
+      worker(Table, [generate_id])
     ]
 
     supervise(children, strategy: :simple_one_for_one)
