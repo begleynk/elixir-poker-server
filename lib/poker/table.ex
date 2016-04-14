@@ -21,8 +21,16 @@ defmodule Poker.Table do
     GenServer.call(table, {:sit, player, seat})
   end
 
+  def leave(table) do
+    GenServer.call(table, :leave)
+  end
+
   def handle_call(:info, _caller, {table, _pids} = state) do
     {:reply, table, state}
+  end
+
+  def handle_call(:leave, {player_pid,_}, state) do
+    {:reply, :ok, do_remove_player(player_pid, state)}
   end
 
   def handle_call({:sit, player, seat}, {player_pid,_}, {table, pids} = state) do
@@ -39,13 +47,8 @@ defmodule Poker.Table do
     end
   end
 
-  def handle_info({:DOWN, _ref, :process, pid, reason}, {table, pids}) do
-    {player_id, monitor_ref} = pids[pid]
-
-    new_pids  = demonitor_player(pids, pid, monitor_ref)
-    new_table = do_remove_player(table, player_id)
-
-    {:noreply, {new_table, new_pids}}
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    {:noreply, do_remove_player(pid, state)}
   end
 
   defp player_already_sitting?(%Table{seats: seats}, player) do
@@ -79,18 +82,27 @@ defmodule Poker.Table do
     }
   end
 
-  defp do_remove_player(%Table{seats: seats} = table, player_id) do
+  defp do_remove_player(pid, {%Table{} = table, pids}) do
+    {player_id, monitor_ref} = pids[pid]
+
+    new_pids  = demonitor_player(pids, pid, monitor_ref)
+    new_table = remove_player_from_table(table, player_id)
+
+    {new_table, new_pids}
+  end
+
+  defp remove_player_from_table(%Table{seats: seats} = table, player_id) do
     %Table{ table |
       seats: seats
-             |> Map.to_list
-             |> Enum.map(fn({seat, id}) ->
-                  if id == player_id do
-                    {seat, :empty}
-                  else
-                    {seat, id}
-                  end
-                end)
-              |> Enum.into(Map.new)
+       |> Map.to_list
+       |> Enum.map(fn({seat, id}) ->
+            if id == player_id do
+              {seat, :empty}
+            else
+              {seat, id}
+            end
+          end)
+       |> Enum.into(Map.new)
     }
   end
 

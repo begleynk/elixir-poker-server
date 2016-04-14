@@ -55,4 +55,18 @@ defmodule Poker.TableTest do
     state = Table.info(table)
     assert state.seats[1] == :empty
   end
+
+  test 'a player can leave a table' do
+    {:ok, player1} = Player.start('player_id_1')
+    {:ok, table} = Table.start_link('table_id', size: 6)
+
+    :ok = player1 |> Player.join_table('table_id', seat: 1)
+    state = Table.info(table)
+    assert state.seats[1] == player1 |> Player.info
+
+    :ok = player1 |> Player.leave_table('table_id')
+
+    state = Table.info(table)
+    assert state.seats[1] == :empty
+  end
 end

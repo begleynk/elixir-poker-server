@@ -24,6 +24,10 @@ defmodule Poker.Player do
     GenServer.call(player, {:join_table, table_id, seat})
   end
 
+  def leave_table(player, table_id) do
+    GenServer.call(player, {:leave_table, table_id})
+  end
+
   def handle_call(:info, _, %Player{} = state) do
     {:reply, state, state}
   end
@@ -32,6 +36,12 @@ defmodule Poker.Player do
     case Table.sit(via_tuple(table_id), player: state, seat: seat) do
       :ok -> {:reply, :ok, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
+  def handle_call({:leave_table, table_id}, _c, %Player{} = state) do
+    case Table.leave(via_tuple(table_id)) do
+      :ok -> {:reply, :ok, state}
     end
   end
 
