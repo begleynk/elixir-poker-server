@@ -9,6 +9,7 @@ defmodule Poker.TableControllerTest do
 
   test "GET /api/tables - returns list of running tables", %{ conn: conn } do
     Poker.Lobby.create_table(size: 2)
+    Poker.Lobby.create_table(size: 3)
 
     conn = get conn, table_path(conn, :index)
 
@@ -25,6 +26,19 @@ defmodule Poker.TableControllerTest do
         },
         "links" => %{
           "self" => "/api/tables/" <> id
+        }
+      }, %{
+        "id" => id2,
+        "attributes" => %{
+          "size" => 3,
+          "seats" => %{
+            "1" => "empty",
+            "2" => "empty",
+            "3" => "empty"
+          }
+        },
+        "links" => %{
+          "self" => "/api/tables/" <> id2
         }
       }]
     } = json_response(conn, 200)

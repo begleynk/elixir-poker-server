@@ -6,7 +6,7 @@ defmodule Poker.TableEventTest do
   test 'can subscribe to new tables being created' do
     TableEvent.subscribe!
 
-    {:ok, table} = Table.start_link('table_id', size: 6)
+    {:ok, table} = Table.start_link(id: 'table_id', size: 6)
 
     %Table{id: id} = table_info = Table.info(table)
 
@@ -20,7 +20,7 @@ defmodule Poker.TableEventTest do
 
   test 'can subscribe players joining a table' do
     {:ok, player} = Player.start_link('player_id_1')
-    {:ok, table} = Table.start_link('table_id', size: 6)
+    {:ok, table} = Table.start_link(id: 'table_id', size: 6)
 
     TableEvent.subscribe!
 
@@ -42,7 +42,7 @@ defmodule Poker.TableEventTest do
 
   test 'can subscribe players leaving a table' do
     {:ok, player} = Player.start_link('player_id_1')
-    {:ok, table} = Table.start_link('table_id', size: 6)
+    {:ok, table} = Table.start_link(id: 'table_id', size: 6)
 
     :ok = player |> Player.join_table('table_id', seat: 1)
 

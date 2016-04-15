@@ -4,7 +4,7 @@ defmodule Poker.Table do
 
   alias Poker.{Table, Player, TableEvent}
 
-  def start_link(id, size: size) do
+  def start_link(id: id, size: size) do
     GenServer.start_link(__MODULE__, [id, size], [name: via_tuple(id)])
   end
 

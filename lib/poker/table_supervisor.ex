@@ -9,14 +9,14 @@ defmodule Poker.TableSupervisor do
   
   def init(_) do
     children = [
-      worker(Table, [generate_id])
+      worker(Table, [])
     ]
 
     supervise(children, strategy: :simple_one_for_one)
   end
 
-  def start_child(args) do
-    Supervisor.start_child(__MODULE__, args)
+  def start_child(size: size) do
+    Supervisor.start_child(__MODULE__, [[id: generate_id, size: size]])
   end
 
   def which_children do
