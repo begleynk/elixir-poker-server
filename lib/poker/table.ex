@@ -155,4 +155,6 @@ defmodule Poker.Table do
   defp via_tuple(id) do
     {:via, :gproc, {:n, :l, {:table, id}}}
   end
+
 end
+

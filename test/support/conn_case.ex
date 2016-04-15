@@ -36,6 +36,7 @@ defmodule Poker.ConnCase do
     unless tags[:async] do
       Ecto.Adapters.SQL.restart_test_transaction(Poker.Repo, [])
     end
+    Poker.TestHelpers.clear_tables 
 
     {:ok, conn: Phoenix.ConnTest.conn()}
   end

@@ -50,7 +50,8 @@ defmodule Poker.Mixfile do
       {:cowboy, "~> 1.0"},
       {:uuid, "~> 1.1" },
       {:cors_plug, "~> 1.1"},
-      {:gproc, "~> 0.5"}
+      {:gproc, "~> 0.5"},
+      {:ja_serializer, "~> 0.8.1"}
     ]
   end
 
