@@ -67,4 +67,35 @@ defmodule Poker.TableControllerTest do
       }
     } = json_response(conn, 200)
   end
+
+  test "POST /api/tables - creates a new table" do
+    payload = %{
+      "data" => %{
+        "type" => "table",
+        "attributes" => %{
+          "size" => 4
+        }
+      }
+    }
+    conn = post conn, table_path(conn, :create, payload)
+
+    assert response_content_type(conn, :json) =~ "charset=utf-8"
+    assert %{
+      "data" => %{
+        "id" => id,
+        "attributes" => %{
+          "size" => 4,
+          "seats" => %{
+            "1" => "empty",
+            "2" => "empty",
+            "3" => "empty",
+            "4" => "empty"
+          }
+        },
+        "links" => %{
+          "self" => "/api/tables/" <> id
+        }
+      }
+    } = json_response(conn, 201)
+  end
 end

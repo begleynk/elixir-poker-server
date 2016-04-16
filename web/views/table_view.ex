@@ -7,7 +7,7 @@ defmodule Poker.TableView do
   location "/api/tables/:id"
   attributes [:seats, :size]
 
-  def seats(%Table{ seats: seats } = table, _conn) do
+  def seats(%Table{ seats: seats }, _conn) do
     seats 
     |> Map.to_list
     |> convert_keys_to_strings
