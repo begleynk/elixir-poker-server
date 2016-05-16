@@ -1,7 +1,7 @@
 defmodule Poker.Player do
   defstruct id: nil
 
-  alias Poker.{Player, Table}
+  alias Poker.{Player, Table, Game}
   use GenServer
 
   def start_link(id) do
@@ -28,6 +28,10 @@ defmodule Poker.Player do
     GenServer.call(player, {:leave_table, table_id})
   end
 
+  def perform_action(player, game_id, %Game.Action{} = action) do
+    GenServer.call(player, {:perform_action, game_id, action})
+  end
+
   def handle_call(:info, _, %Player{} = state) do
     {:reply, state, state}
   end
@@ -41,6 +45,12 @@ defmodule Poker.Player do
 
   def handle_call({:leave_table, table_id}, _c, %Player{} = state) do
     case Table.leave(via_tuple(table_id)) do
+      :ok -> {:reply, :ok, state}
+    end
+  end
+
+  def handle_call({:perform_action, game_id, action}, _c, %Player{} = state) do
+    case Game.whereis(game_id) |> Game.perform_action(action) do
       :ok -> {:reply, :ok, state}
     end
   end
