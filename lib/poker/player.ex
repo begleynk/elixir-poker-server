@@ -1,11 +1,11 @@
 defmodule Poker.Player do
   defstruct id: nil
 
-  alias Poker.{Player, Table, Game}
+  alias Poker.{Player, Table, Game, Game.Event}
   use GenServer
 
   def start_link(id) do
-    GenServer.start_link(__MODULE__, [id], [])
+    GenServer.start_link(__MODULE__, [id], [name: via_tuple(id)])
   end
 
   def start(id) do
@@ -14,6 +14,10 @@ defmodule Poker.Player do
 
   def init([id]) do
     {:ok, %Player{id: id}}
+  end
+
+  def whereis(player_id) do
+    :gproc.whereis_name({:n, :l, {:player, player_id}})
   end
 
   def info(player) do
@@ -28,7 +32,7 @@ defmodule Poker.Player do
     GenServer.call(player, {:leave_table, table_id})
   end
 
-  def perform_action(player, game_id, %Game.Action{} = action) do
+  def perform_action(player, game_id, %Game.Event{} = action) do
     GenServer.call(player, {:perform_action, game_id, action})
   end
 
@@ -37,25 +41,27 @@ defmodule Poker.Player do
   end
 
   def handle_call({:join_table, table_id, seat}, _c, %Player{} = state) do
-    case Table.sit(via_tuple(table_id), player: state, seat: seat) do
+    case Table.whereis(table_id) |> Table.sit(player: state, seat: seat) do
       :ok -> {:reply, :ok, state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call({:leave_table, table_id}, _c, %Player{} = state) do
-    case Table.leave(via_tuple(table_id)) do
+    case Table.whereis(table_id) |> Table.leave do
       :ok -> {:reply, :ok, state}
     end
   end
 
   def handle_call({:perform_action, game_id, action}, _c, %Player{} = state) do
+    action = action |> Game.Event.specify_player(state.id)
+
     case Game.whereis(game_id) |> Game.perform_action(action) do
       :ok -> {:reply, :ok, state}
     end
   end
 
-  defp via_tuple(table_id) do
-    {:via, :gproc, {:n, :l, {:table, table_id}}}
+  defp via_tuple(id) do
+    {:via, :gproc, {:n, :l, {:player, id}}}
   end
 end

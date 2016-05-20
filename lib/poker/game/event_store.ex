@@ -6,7 +6,7 @@ defmodule Poker.Game.EventStore do
     []
   end
 
-  def add_event(events, %Game.Action{} = action) do
+  def add_event(events, %Game.Event{} = action) do
     [action | events]
   end
 

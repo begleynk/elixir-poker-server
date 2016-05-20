@@ -21,6 +21,10 @@ defmodule Poker.Table do
     {:ok, {table, player_pids}}
   end
 
+  def whereis(table_id) do
+    :gproc.whereis_name({:n, :l, {:table, table_id}})
+  end
+
   def info(table) do
     GenServer.call(table, :info)
   end
