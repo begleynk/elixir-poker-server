@@ -35,10 +35,7 @@ defmodule Poker.GameTest do
       actions: [:call, :sit_out]
     }
 
-    assert :ok == player1 |> Player.perform_action(
-      "game_foo",
-      Game.Event.call(amount: 100)
-    )
+    :ok = player1 |> Player.perform_action("game_foo", Game.Event.call(amount: 100))
 
     state = Game.state(game)
     assert state.phase == :setup
@@ -50,10 +47,7 @@ defmodule Poker.GameTest do
       actions: [:call, :sit_out]
     }
 
-    assert :ok == player2 |> Player.perform_action(
-      "game_foo",
-      Game.Event.call(amount: 200)
-    )
+    :ok = player2 |> Player.perform_action("game_foo", Game.Event.call(amount: 200))
 
     state = Game.state(game)
     assert state.phase == :preflop
@@ -67,13 +61,10 @@ defmodule Poker.GameTest do
       player: "player_id_3",
       type: :answer_bet,
       to_call: 200,
-      actions: [:call, :fold, :raise]
+      actions: [:call, :raise, :fold]
     }
 
-    assert :ok == player3 |> Player.perform_action(
-      "game_foo",
-      Game.Event.call(amount: 200)
-    )
+    :ok = player3 |> Player.perform_action("game_foo", Game.Event.call(amount: 200))
 
     state = Game.state(game)
     assert state.phase == :preflop
@@ -82,13 +73,10 @@ defmodule Poker.GameTest do
       player: "player_id_1",
       type: :answer_bet,
       to_call: 100,
-      actions: [:call, :fold, :raise]
+      actions: [:call, :raise, :fold]
     }
 
-    assert :ok == player1 |> Player.perform_action(
-      "game_foo",
-      Game.Event.raise(amount: 600)
-    )
+    :ok = player1 |> Player.perform_action("game_foo", Game.Event.raise(amount: 600))
 
     state = Game.state(game)
     assert state.phase == :preflop
@@ -97,7 +85,7 @@ defmodule Poker.GameTest do
       player: "player_id_2",
       type: :answer_bet,
       to_call: 400,
-      actions: [:call, :fold, :raise]
+      actions: [:call, :raise, :fold]
     }
 
     assert :ok == player2 |> Player.perform_action(
@@ -112,13 +100,10 @@ defmodule Poker.GameTest do
       player: "player_id_3",
       type: :answer_bet,
       to_call: 400,
-      actions: [:call, :fold, :raise]
+      actions: [:call, :raise, :fold]
     }
 
-    assert :ok == player3 |> Player.perform_action(
-      "game_foo",
-      Game.Event.fold
-    )
+    assert :ok == player3 |> Player.perform_action("game_foo", Game.Event.fold)
 
     state = Game.state(game)
     assert [_,_,{"player_id_3", :button, :folded}] = state.players
@@ -126,5 +111,65 @@ defmodule Poker.GameTest do
     assert state.next_action == nil
     assert state.phase == :showdown
     assert state.winner == "player_id_1"
+  end
+
+  test 'going to the flop' do
+    {:ok, player1} = Player.start_link("player_id_1")
+    {:ok, player2} = Player.start_link("player_id_2")
+    {:ok, player3} = Player.start_link("player_id_3")
+
+    assert {:ok, game} = Game.start_link(["player_id_1", "player_id_2", "player_id_3"], {100, 200}, "game_foo")
+
+    # call small blind
+    :ok = player1 |> Player.perform_action("game_foo", Game.Event.call(amount: 100))
+
+    state = Game.state(game)
+    assert state.phase == :setup
+
+    # call big blind
+    :ok = player2 |> Player.perform_action("game_foo", Game.Event.call(amount: 200))
+
+    state = Game.state(game)
+    assert state.phase == :preflop
+
+    # button call 
+    :ok = player3 |> Player.perform_action("game_foo", Game.Event.call(amount: 200))
+
+    state = Game.state(game)
+    assert state.phase == :preflop
+
+    # sb call 
+    :ok = player1 |> Player.perform_action("game_foo", Game.Event.call(amount: 200))
+
+    state = Game.state(game)
+    assert state.phase == :preflop
+    assert state.next_action == %Game.NextAction{
+      player: "player_id_2",
+      type: :answer_bet,
+      to_call: 0,
+      actions: [:check, :raise, :fold]
+    }
+
+    # bb check 
+    :ok = player2 |> Player.perform_action("game_foo", Game.Event.check)
+
+    state = Game.state(game)
+    assert %{
+      "player_id_1" => {%Card{}, %Card{}},
+      "player_id_2" => {%Card{}, %Card{}},
+      "player_id_3" => {%Card{}, %Card{}},
+    } = state.pocket_cards
+    assert [
+      %Card{}, 
+      %Card{}, 
+      %Card{}
+    ] = state.community_cards
+    assert state.phase == :flop
+    assert state.next_action == %Game.NextAction{
+      player: "player_id_3",
+      type: :regular_action,
+      to_call: 0,
+      actions: [:check, :bet, :fold]
+    }
   end
 end

@@ -4,7 +4,8 @@ defmodule Poker.Game.Event do
     player_id: nil,
     game_id: nil,
     type: nil, 
-    amount: nil
+    amount: nil,
+    phase: nil
   ]
 
   alias Poker.Game.Event
@@ -14,6 +15,14 @@ defmodule Poker.Game.Event do
       id: generate_id,
       type: type,
       amount: amount,
+    }
+  end
+
+  def new(type: type, phase: phase) do
+    %Event{
+      id: generate_id,
+      type: type,
+      phase: phase,
     }
   end
 
@@ -34,6 +43,14 @@ defmodule Poker.Game.Event do
 
   def fold do
     Event.new(type: :fold)
+  end
+
+  def check do
+    Event.new(type: :check)
+  end
+
+  def phase_transition(next_phase) when next_phase in [:preflop, :flop, :turn, :river, :showdown] do
+    Event.new(type: :phase_transition, phase: next_phase)
   end
 
   def specify_player(action, player_id) do
