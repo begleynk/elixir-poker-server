@@ -11,7 +11,8 @@ defmodule Poker.Game.State do
     next_action: nil,
     deck: Deck.new,
     pocket_cards: Map.new,
-    event_store: Game.EventStore.new
+    event_store: Game.EventStore.new,
+    winner: nil
   ]
 
   def new(id: id, small_blind: sb, big_blind: bb, players: [first_player | _rest] = players) do
@@ -90,6 +91,10 @@ defmodule Poker.Game.State do
     end
   end
 
+  defp next_action(%Game.State{phase: :showdown} = state) do
+    %Game.State{ state | next_action: nil }
+  end
+
   defp next_action(state) do
     next_action = 
       Game.NextAction.new
@@ -112,7 +117,7 @@ defmodule Poker.Game.State do
   end
 
   defp determine_next_player(action, %Game.State{phase: :preflop} = state) do
-    if state |> only_blinds_have_been_paid? do
+    if only_blinds_have_been_paid?(state) do
       player_after_big_blind = 
         state.players
         |> find_player_after(player_in_position(state.players, :big_blind))
@@ -162,10 +167,13 @@ defmodule Poker.Game.State do
   end
 
   defp maybe_move_to_next_phase(state) do
-    if everyone_has_acted?(state) do
-      move_to_next_phase(state)      
-    else
-      state
+    cond do
+      length(active_players(state.players)) == 1 ->
+        move_to_showdown(state)
+      everyone_has_acted?(state) ->
+        move_to_next_phase(state)
+      true ->
+        state
     end
   end
 
@@ -175,6 +183,13 @@ defmodule Poker.Game.State do
         {new_deck, pocket_cards} = draw_pocket_cards(deck, players)
         %Game.State{ state | phase: :preflop, pocket_cards: pocket_cards, deck: new_deck }
     end
+  end
+
+  def move_to_showdown(%Game.State{} = state) do
+    %Game.State{ state |
+      phase: :showdown,
+      winner: determine_winner(state)
+    }
   end
 
   defp everyone_has_acted?(%Game.State{phase: :setup} = state) do
@@ -227,6 +242,12 @@ defmodule Poker.Game.State do
       {:ok, [card1, card2], new_deck} = Deck.draw_cards(the_deck, 2)
       {new_deck, Map.put(hands, id, {card1, card2})}
     end)
+  end
+
+  def determine_winner(state) do
+    if length(active_players(state.players)) == 1 do
+      active_players(state.players) |> Enum.fetch!(0)
+    end
   end
   
   defp build_players(players) do

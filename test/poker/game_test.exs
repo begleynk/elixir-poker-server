@@ -36,7 +36,7 @@ defmodule Poker.GameTest do
     }
 
     assert :ok == player1 |> Player.perform_action(
-      "game_foo", 
+      "game_foo",
       Game.Event.call(amount: 100)
     )
 
@@ -51,7 +51,7 @@ defmodule Poker.GameTest do
     }
 
     assert :ok == player2 |> Player.perform_action(
-      "game_foo", 
+      "game_foo",
       Game.Event.call(amount: 200)
     )
 
@@ -71,7 +71,7 @@ defmodule Poker.GameTest do
     }
 
     assert :ok == player3 |> Player.perform_action(
-      "game_foo", 
+      "game_foo",
       Game.Event.call(amount: 200)
     )
 
@@ -86,7 +86,7 @@ defmodule Poker.GameTest do
     }
 
     assert :ok == player1 |> Player.perform_action(
-      "game_foo", 
+      "game_foo",
       Game.Event.raise(amount: 600)
     )
 
@@ -101,7 +101,7 @@ defmodule Poker.GameTest do
     }
 
     assert :ok == player2 |> Player.perform_action(
-      "game_foo", 
+      "game_foo",
       Game.Event.fold
     )
 
@@ -114,5 +114,17 @@ defmodule Poker.GameTest do
       to_call: 400,
       actions: [:call, :fold, :raise]
     }
+
+    assert :ok == player3 |> Player.perform_action(
+      "game_foo",
+      Game.Event.fold
+    )
+
+    state = Game.state(game)
+    assert [_,_,{"player_id_3", :button, :folded}] = state.players
+    assert state.total_pot == 1100
+    assert state.next_action == nil
+    assert state.phase == :showdown
+    assert state.winner == "player_id_1"
   end
 end
