@@ -166,7 +166,7 @@ defmodule Poker.GameTest do
     ] = state.community_cards
     assert state.phase == :flop
     assert state.next_action == %Game.NextAction{
-      player: "player_id_3",
+      player: "player_id_1",
       type: :regular_action,
       to_call: 0,
       actions: [:check, :bet, :fold]
