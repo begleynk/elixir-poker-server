@@ -10,7 +10,7 @@ defmodule Poker.Game.EventStore do
     [action | events]
   end
 
-  def last_action([action | _events]) do
+  def last_event([action | _events]) do
     action
   end
 

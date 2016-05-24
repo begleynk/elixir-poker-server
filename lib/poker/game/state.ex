@@ -1,344 +1,270 @@
 defmodule Poker.Game.State do
   alias Poker.{Game, Deck}
   defstruct [
-    id: nil, 
-    players: [], 
-    active_bets: Map.new,
-    total_pot: 0,
+    id: nil,
+    players: [],
     small_blind: nil, 
     big_blind: nil, 
-    phase: :setup,
+    positions: [],
     next_action: nil,
-    deck: Deck.new,
-    pocket_cards: Map.new,
-    community_cards: [],
+    phase: :setup,
     event_store: Game.EventStore.new,
-    winner: nil
+    pot: 0,
+    active_bets: Map.new,
+    pocket_cards: %{},
+    community_cards: [],
+    deck: Deck.new
   ]
 
-  def new(id: id, small_blind: sb, big_blind: bb, players: [first_player | _rest] = players) do
-    %Game.State{
-      id: id,
-      small_blind: sb,
-      big_blind: bb,
-      players: build_players(players),
-      next_action: %Game.NextAction{
-        player: first_player,
-        type: :post_blind,
-        to_call: sb,
-        actions: [:call, :sit_out]
-      }
-    }
+  def new(id: id, small_blind: sb, big_blind: bb, players: players) do
+    %Game.State{ id: id, small_blind: sb, big_blind: bb, players: players }
+    |> build_positions
+    |> set_first_action
   end
 
-  def handle_event(%Game.State{} = state, %Game.Event{} = event) do
-    new_state 
-      = state
-      |> update_with_event(event)
-      |> add_event_to_event_store(event)
-      |> maybe_move_to_next_phase
-      |> determine_next_action
-
-    {:ok, new_state}
+  def handle_action(%Game.State{ next_action: %Game.NextAction{ player: next }}, %Game.Action{ player: other }) when next != other do
+    {:error, :out_of_turn}
   end
 
-  defp update_with_event(%Game.State{} = state, %Game.Event{} = event) do
-    state
-    |> calculate_bets(event)
-    |> calculate_total_pot(event)
-    |> set_player_status(event)
+  def handle_action(%Game.State{ next_action: %Game.NextAction{ to_call: to_call }}, %Game.Action{ type: :call, amount: amount }) when to_call != amount do
+    {:error, :invalid_call}
   end
 
-  defp calculate_bets(%Game.State{active_bets: bets} = state, %Game.Event{type: type} = event) when type in [:call, :raise] do
-    %Game.State{ state |
-      active_bets: bets |> Map.update(event.player_id, event.amount, fn(_) -> event.amount end)
-    }
-  end
-
-  defp calculate_bets(state, _event) do
-    state
-  end
-
-  defp calculate_total_pot(%Game.State{total_pot: total_pot} = state, %Game.Event{amount: amount}) when is_integer(amount) do
-    %Game.State{ state |
-      total_pot: total_pot + amount
-    }
-  end
-
-  defp calculate_total_pot(state, _event) do
-    state
-  end
-
-  defp set_player_status(state, %Game.Event{type: :fold, player_id: player_id}) do
-    %Game.State{ state |
-      players: state.players |> Enum.map(fn({id, pos, status}) -> 
-        if id == player_id do
-          {id, pos, :folded}
-        else
-          {id, pos, status}
-        end
-      end)
-    }
-  end
-
-  defp set_player_status(state, _event) do
-    state
-  end
-
-  defp determine_next_action(state) do
-    case state.phase do
-      :setup -> next_setup_action(state)
-           _ -> next_action(state)
-    end
-  end
-
-  defp next_action(%Game.State{phase: :showdown} = state) do
-    %Game.State{ state | next_action: nil }
-  end
-
-  defp next_action(state) do
-    next_action = 
-      Game.NextAction.new
-      |> determine_next_player(state)
-      |> determine_next_action_type(state)
-    
-    %Game.State{ state | next_action: next_action }
-  end
-
-  # The only possible action will be handling the big blind
-  defp next_setup_action(%Game.State{players: [_first, {id, _pos, _status} | _rest]} = state) do
-    %Game.State{ state | 
-      next_action: %Game.NextAction{
-        player: id,
-        type: :post_blind,
-        to_call: state.big_blind,
-        actions: [:call, :sit_out]
-      }
-    }
-  end
-
-  defp determine_next_player(action, %Game.State{phase: :preflop} = state) do
-    if only_blinds_have_been_paid?(state) do
-      player_after_big_blind = 
-        state.players
-        |> find_player_after(player_in_position(state.players, :big_blind))
-
-      %Game.NextAction{ action | 
-        player: player_after_big_blind
-      }
+  def handle_action(state, %Game.Action{} = action) do
+    if Enum.any?(state.next_action.actions, &(&1 == action.type)) do
+      update_with_event(state, Game.Event.new(action))
     else
-      %Game.NextAction{ action | 
-        player: state.players |> find_player_after(state.next_action.player)
-      }
+      {:error, :invalid_action}
     end
   end
 
-  defp determine_next_player(action, %Game.State{next_action: previous_action} = state) do
-    %Game.NextAction{ action | 
-      player: state.players |> find_player_after(previous_action.player)
-    }
+  defp update_with_event(state, %Game.Event{} = event) do
+    state
+    |> save_event(event)
+    |> recalculate_bets
+    |> maybe_move_to_next_phase
+    |> determine_next_action
   end
 
-  defp determine_next_action_type(action, %Game.State{active_bets: bets}) do
-    amount_to_call = highest_bet(bets) - (bets[action.player] || 0)
-    amount_bet_this_phase = bets |> Map.to_list |> Enum.reduce(0, fn({_, x}, acc) -> acc + x end)
+  def maybe_move_to_next_phase(%Game.State{ phase: :setup, active_bets: bets } = state) do
+    if length(bets |> Map.to_list) == 2 && 
+       bets[player_in_position(state, :small_blind)] == state.small_blind &&
+       bets[player_in_position(state, :big_blind)] == state.big_blind do
 
-    cond do
-      amount_to_call > 0 -> 
-        %Game.NextAction{ action |
-          type: :answer_bet,
-          to_call: amount_to_call, 
-          actions: [:call, :raise, :fold]
-        }
-      amount_bet_this_phase == 0 ->
-        %Game.NextAction{ action |
-          type: :regular_action,
-          to_call: amount_to_call, 
-          actions: [:check, :bet, :fold]
-        }
-      true -> 
-        %Game.NextAction{ action |
-          type: :answer_bet,
-          to_call: amount_to_call, 
-          actions: [:check, :raise, :fold]
-        }
+      state |> move_to_phase(:preflop)
+    else
+      state
     end
   end
 
-  defp only_blinds_have_been_paid?(%Game.State{active_bets: bets, players: players, small_blind: sb, big_blind: bb}) do
-    length(bets|> Map.to_list) == 2 
-    && bets[player_in_position(players, :small_blind)] == sb
-    && bets[player_in_position(players, :big_blind)] == bb
-  end
-
-  defp player_in_position(players, position) do
-    players 
-    |> Enum.find(fn({_,pos,_}) -> pos == position end)
-    |> (fn({id, _, _}) -> id end).()
-  end
-
-  defp find_player_after([{target, _,_}, {match,_,_} | _rest], target) do
-    match
-  end
-
-  defp find_player_after([a, b | rest], target) do
-    find_player_after(Enum.concat([b], Enum.concat(rest,[a])), target)
-  end
-
-  defp maybe_move_to_next_phase(state) do
-    cond do
-      length(active_players(state.players)) == 1 ->
-        move_to_showdown(state)
-      everyone_has_acted?(state) ->
-        move_to_next_phase(state)
-      true ->
-        state
+  def maybe_move_to_next_phase(%Game.State{ phase: current_phase } = state) do
+    if state |> everyone_has_acted_in_phase?(current_phase) do
+      state |> move_to_phase(phase_after(current_phase))
+    else
+      state
     end
   end
 
-  def move_to_next_phase(%Game.State{phase: phase, players: players, deck: deck, community_cards: c_cards, event_store: events} = state) do
-    case next_phase(phase) do
+  defp everyone_has_acted_in_phase?(state, phase) do
+    state |> Game.EventParser.everyone_has_acted_in_phase?(phase)
+  end
+
+  defp move_to_phase(state, new_phase) do
+    case new_phase do
       :preflop -> 
-        {new_deck, pocket_cards} = draw_pocket_cards(deck, players)
+        {new_deck, pocket_cards} = draw_pocket_cards(state.deck, state.players)
         %Game.State{ state | 
-          phase: :preflop, 
-          pocket_cards: pocket_cards, 
-          deck: new_deck,
-          event_store: events |> Game.EventStore.add_event(Game.Event.phase_transition(:preflop))
+          event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:preflop)),
+          phase: :preflop,
+          pocket_cards: pocket_cards,
+          deck: new_deck
         }
       :flop -> 
-        {:ok, flop_cards, new_deck} = Poker.Deck.draw_cards(deck, 3)
+        {:ok, flop_cards, new_deck} = Poker.Deck.draw_cards(state.deck, 3)
         %Game.State{ state | 
-          phase: :flop, 
-          community_cards: flop_cards, 
-          deck: new_deck,
-          event_store: events |> Game.EventStore.add_event(Game.Event.phase_transition(:flop)),
-          active_bets: Map.new
-        }
-      :turn -> 
-        {:ok, turn_card, new_deck} = Poker.Deck.draw_card(deck)
-        %Game.State{ state | 
-          phase: :flop, 
-          community_cards: [turn_card | c_cards], 
-          deck: new_deck,
-          event_store: events |> Game.EventStore.add_event(Game.Event.phase_transition(:turn)),
-          active_bets: Map.new
+          event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:flop)),
+          phase: :flop,
+          community_cards: flop_cards,
+          active_bets: %{},
+          deck: new_deck
         }
     end
   end
 
-  def move_to_showdown(%Game.State{} = state) do
+  defp determine_next_action(%Game.State{ phase: :setup } = state) do
     %Game.State{ state |
-      phase: :showdown,
-      winner: determine_winner(state)
+      next_action: %Game.NextAction{
+        player: player_in_position(state, :big_blind),
+        type: :call_blind,
+        actions: [:call, :sit_out],
+        to_call: state.big_blind
+      }
     }
   end
 
-  defp everyone_has_acted?(%Game.State{phase: :setup} = state) do
-    blinds_have_been_paid?(state)
+  defp determine_next_action(%Game.State{ phase: :preflop} = state) do
+    last_event = Game.EventStore.last_event(state.event_store)
+
+    case last_event.type do
+      :phase_transition -> 
+        next_to_act = active_player_after(state, :big_blind) # Preflop the player after BB goes first
+        %Game.State{ state |
+          next_action: %Game.NextAction{
+            player: next_to_act,
+            type: :call_bet,
+            actions: [:call, :raise, :fold],
+            to_call: state.big_blind - amount_bet_by(state, next_to_act) 
+          }
+        }
+      _anything_else ->
+        next_action = 
+          %Game.NextAction{ player: active_player_after(state, last_event.player), type: :call_bet } 
+          |> determine_action_details(state)
+
+        %Game.State{ state | next_action: next_action}
+    end
   end
 
-  defp everyone_has_acted?(%Game.State{event_store: events, players: players, active_bets: bets, next_action: previous_action} = state) do
-    if highest_bet(bets) == 0 do
-      last_acting_player(players) == previous_action.player_id
+  defp determine_next_action(%Game.State{} = state) do
+    last_event = Game.EventStore.last_event(state.event_store)
+
+    case last_event.type do
+      :phase_transition -> 
+        next_to_act = 
+        %Game.State{ state |
+          next_action: %Game.NextAction{
+            player: player_in_position(state, :small_blind),
+            type: :regular_action,
+            actions: [:check, :bet, :fold]
+          }
+        }
+      _anything_else ->
+        next_action = 
+          %Game.NextAction{ player: active_player_after(state, last_event.player), type: :call_bet } 
+          |> determine_action_details(state)
+
+        %Game.State{ state | next_action: next_action}
+    end
+  end
+
+  defp determine_action_details(%Game.NextAction{} = action, state) do
+    to_call = highest_bet(state) - amount_bet_by(state, action.player)
+
+    if to_call == 0 do
+      %Game.NextAction{ action | to_call: 0, actions: [:check, :raise, :fold] }
     else
-      all_active_players_have_paid_bets?(state)
+      %Game.NextAction{ action | to_call: to_call, actions: [:call, :raise, :fold] }
     end
   end
 
-  # During preflop, BB has the chance to check their big blind if it has been called to them
-  defp all_active_players_have_paid_bets?(%Game.State{active_bets: bets, phase: :preflop} = state) do
-    if highest_bet(bets) == state.big_blind && state.next_action.player == player_in_position(state.players, :small_blind) do
-      false
-    else
-      state.players
-      |> active_players
-      |> Enum.all?(fn(id) ->
-        bets[id] == highest_bet(bets)
-      end)
+  defp recalculate_bets(state) do
+    last_event =  Game.EventStore.last_event(state.event_store)
+
+    case last_event.type do
+      :phase_transition -> 
+        state
+      :check -> 
+        state
+      :fold -> 
+        state
+      _ ->
+        %Game.State{ state | 
+          pot: state.pot + last_event.amount,
+          active_bets: update_bets(state.active_bets, last_event) 
+        }
     end
   end
 
-  defp all_active_players_have_paid_bets?(%Game.State{active_bets: bets} = state) do
-    state.players
-    |> active_players
-    |> Enum.all?(fn(id) ->
-      bets[id] == highest_bet(bets)
-    end)
+  defp update_bets(bets, event) do
+    Map.update(bets, event.player, event.amount, fn(_) -> event.amount end)
   end
 
-  defp highest_bet(bets) do
-    if length(Map.to_list(bets)) == 0 do
-      0
-    else
-      bets
-      |> Map.to_list
-      |> Stream.map(fn({_, amount}) -> amount end)
-      |> Enum.max
-    end
-  end
-
-  defp active_players(players) do
-    players
-      |> Stream.filter(fn({_,_,status}) -> status == :playing end)
-      |> Enum.map(fn({id, _,_}) -> id end)
-  end
-
-  defp blinds_have_been_paid?(%Game.State{players: [{sb,_,_}, {bb,_,_} | _players]} = state) do
-    state.active_bets[sb] == state.small_blind && state.active_bets[bb] == state.big_blind
-  end
-
-  defp next_phase(phase) do
-    case phase do
-      :setup   -> :preflop
-      :preflop -> :flop
-      :flop    -> :turn
-    end
-  end
-
-  defp add_event_to_event_store(%Game.State{ event_store: store } = state, %Game.Event{} = event) do
+  defp save_event(state, event) do
     %Game.State{ state | 
-      event_store: store |> Game.EventStore.add_event(event)
+      event_store: state.event_store |> Game.EventStore.add_event(event)
     }
+  end
+
+  defp set_first_action(state) do
+    %Game.State{ state | 
+      next_action: %Game.NextAction{
+        type: :call_blind,
+        player: state |> player_in_position(:small_blind),
+        to_call: state.small_blind,
+        actions: [:call, :sit_out]
+      }
+    }
+  end
+
+  defp player_in_position(state, position) do
+    {_, player, _} = Enum.find(state.positions, fn({pos, _player, _status}) ->
+      pos == position 
+    end)
+
+    player
+  end
+
+  defp position_of(state, player) do
+    {position, _, _} = Enum.find(state.positions, fn({_pos, p, _status}) ->
+      p == player
+    end)
+
+    position
+  end
+
+  defp active_player_after(%Game.State{ positions: positions }, position) when is_atom(position) do
+    position_index = Enum.find_index(positions, fn({pos, _p, _s}) -> pos == position end)
+    next_index = rem (position_index + 1), length(positions)
+
+    positions
+    |> Enum.fetch(next_index)
+    |> (fn({_pos, {_, p, _}}) -> p end).()
+  end
+
+  defp active_player_after(state, player) do
+    active_player_after(state, position_of(state, player))
+  end
+
+  defp highest_bet(state) do
+    state.active_bets
+    |> Map.to_list
+    |> Enum.map(fn({_, amount}) -> amount end)
+    |> Enum.max
+  end
+
+  defp build_positions(%Game.State{players: players} = state) do
+    last_position = length(players) - 1
+
+    positions = 
+      players
+      |> Stream.with_index
+      |> Enum.map(fn({player, index}) -> 
+        case index do
+          0 -> {:small_blind, player, :playing} 
+          1 -> {:big_blind, player, :playing} 
+          ^last_position -> {:button, player, :playing}
+          pos -> {(pos + 1) |> Integer.to_string |> String.to_atom, player, :playing}
+        end
+      end)
+
+    %Game.State{state | positions: positions}
   end
 
   defp draw_pocket_cards(deck, players) do
-    Enum.reduce(players, {deck, Map.new}, fn({id, _,_}, {the_deck, hands}) ->
+    Enum.reduce(players, {deck, Map.new}, fn(id, {the_deck, hands}) ->
       {:ok, [card1, card2], new_deck} = Deck.draw_cards(the_deck, 2)
       {new_deck, Map.put(hands, id, {card1, card2})}
     end)
   end
 
-  defp last_acting_player(players) do
-    players
-    |> Enum.filter(fn({_id, _pos, status}) -> status == :playing end)
-    |> Enum.reverse
-    |> (fn({id,_,_}) -> id end).()
+  defp amount_bet_by(state, player) do
+    Map.get(state.active_bets, player, 0)
   end
 
-  def determine_winner(state) do
-    if length(active_players(state.players)) == 1 do
-      active_players(state.players) |> Enum.fetch!(0)
+  defp phase_after(phase) do
+    case phase do
+      :preflop -> :flop
+      :flop    -> :turn
     end
-  end
-  
-  defp build_players(players) do
-    build_players(players, [], 1)
-  end
-
-  defp build_players([], acc, _position) do
-    Enum.reverse(acc)
-  end
-
-  defp build_players([player | []], acc, position) do
-   build_players([], [{player, :button, :playing} | acc], position + 1)
-  end
-
-  defp build_players([player | rest], acc, position) do
-     case position do
-       1 -> build_players(rest, [{player, :small_blind, :playing} | acc], position + 1)
-       2 -> build_players(rest, [{player, :big_blind, :playing} | acc], position + 1)
-       _ -> build_players(rest, [{player, position, :playing} | acc], position + 1)
-     end
   end
 end
