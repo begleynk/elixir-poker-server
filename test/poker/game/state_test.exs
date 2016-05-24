@@ -212,5 +212,10 @@ defmodule Poker.Game.StateTest do
     } = state.next_action
 
     state = state |> State.handle_action(Action.fold("p4"))
+
+    assert state.pot == 590
+    assert state.phase == :flop
+    assert state.next_action == nil
+    assert state.winner == "p1"
   end
 end

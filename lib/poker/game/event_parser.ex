@@ -85,7 +85,6 @@ defmodule Poker.Game.EventParser do
 
   defp build_player_state_holder(player_positions) do
     player_positions
-    |> Stream.filter(fn({_pos, _player, status}) -> status == :playing end)
     |> Stream.map(fn({_pos, player, _s}) -> {player, %{acted: false, bet: 0, status: :playing}} end)
     |> Enum.into(Map.new)
   end

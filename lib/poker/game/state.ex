@@ -13,7 +13,8 @@ defmodule Poker.Game.State do
     active_bets: Map.new,
     pocket_cards: %{},
     community_cards: [],
-    deck: Deck.new
+    deck: Deck.new,
+    winner: nil
   ]
 
   def new(id: id, small_blind: sb, big_blind: bb, players: players) do
@@ -44,9 +45,10 @@ defmodule Poker.Game.State do
     |> recalculate_bets
     |> maybe_move_to_next_phase
     |> determine_next_action
+    |> check_for_winner
   end
 
-  def maybe_move_to_next_phase(%Game.State{ phase: :setup, active_bets: bets } = state) do
+  defp maybe_move_to_next_phase(%Game.State{ phase: :setup, active_bets: bets } = state) do
     if length(bets |> Map.to_list) == 2 && 
        bets[player_in_position(state, :small_blind)] == state.small_blind &&
        bets[player_in_position(state, :big_blind)] == state.big_blind do
@@ -57,9 +59,19 @@ defmodule Poker.Game.State do
     end
   end
 
-  def maybe_move_to_next_phase(%Game.State{ phase: current_phase } = state) do
+  defp maybe_move_to_next_phase(%Game.State{ phase: current_phase } = state) do
     if state |> everyone_has_acted_in_phase?(current_phase) do
       state |> move_to_phase(phase_after(current_phase))
+    else
+      state
+    end
+  end
+
+  defp check_for_winner(state) do
+    if only_one_player_left?(state) do
+      %Game.State{ state | 
+        winner: state.positions |> Enum.find(fn({_,_,status}) -> status == :playing end) |> (fn({_,pl,_}) -> pl end).()
+      }
     else
       state
     end
@@ -105,8 +117,11 @@ defmodule Poker.Game.State do
   defp determine_next_action(%Game.State{ phase: :preflop} = state) do
     last_event = Game.EventStore.last_event(state.event_store)
 
-    case last_event.type do
-      :phase_transition -> 
+    cond do 
+      only_one_player_left?(state) ->
+        %Game.State{ state | next_action: nil }
+
+      last_event.type == :phase_transition -> 
         next_to_act = active_player_after(state, :big_blind) # Preflop the player after BB goes first
         %Game.State{ state |
           next_action: %Game.NextAction{
@@ -116,20 +131,25 @@ defmodule Poker.Game.State do
             to_call: state.big_blind - amount_bet_by(state, next_to_act) 
           }
         }
-      _anything_else ->
-        next_action = 
-          %Game.NextAction{ player: active_player_after(state, last_event.player), type: :call_bet } 
-          |> determine_action_details(state)
 
-        %Game.State{ state | next_action: next_action}
+      true ->
+        %Game.State{ state | 
+          next_action: %Game.NextAction{ 
+            player: active_player_after(state, last_event.player), 
+            type: :call_bet 
+          } |> determine_action_details(state)
+        }
     end
   end
 
   defp determine_next_action(%Game.State{} = state) do
     last_event = Game.EventStore.last_event(state.event_store)
 
-    case last_event.type do
-      :phase_transition -> 
+    cond do
+      only_one_player_left?(state) ->
+        %Game.State{ state | next_action: nil }
+
+      last_event.type == :phase_transition -> 
         next_to_act = 
         %Game.State{ state |
           next_action: %Game.NextAction{
@@ -138,7 +158,8 @@ defmodule Poker.Game.State do
             actions: [:check, :bet, :fold]
           }
         }
-      _anything_else ->
+        
+      true ->
         next_action = 
           %Game.NextAction{ player: active_player_after(state, last_event.player), type: :call_bet } 
           |> determine_action_details(state)
@@ -157,6 +178,10 @@ defmodule Poker.Game.State do
     end
   end
 
+  defp only_one_player_left?(state) do
+    1 == state.positions |> Enum.count(fn({_,_,status}) -> status == :playing end)
+  end
+
   defp recalculate_bets(state) do
     last_event =  Game.EventStore.last_event(state.event_store)
 
@@ -166,7 +191,9 @@ defmodule Poker.Game.State do
       :check -> 
         state
       :fold -> 
-        state
+        %Game.State{ state | 
+          positions: set_player_status(state.positions, last_event.player, :folded)
+        }
       _ ->
         %Game.State{ state | 
           pot: state.pot + last_event.amount,
@@ -213,16 +240,28 @@ defmodule Poker.Game.State do
   end
 
   defp active_player_after(%Game.State{ positions: positions }, position) when is_atom(position) do
-    position_index = Enum.find_index(positions, fn({pos, _p, _s}) -> pos == position end)
-    next_index = rem (position_index + 1), length(positions)
+    active_players_after_position = 
+      positions
+      |> rotate_until_at_front(position)
+      |> Enum.filter(fn({pos,_,status}) -> position == pos || status == :playing end)
+      |> Enum.map(fn({_, id,_}) -> id end)
 
-    positions
-    |> Enum.fetch(next_index)
-    |> (fn({_pos, {_, p, _}}) -> p end).()
+    case active_players_after_position do
+      [_only_one_player] -> raise "We should probably win now?"
+      [_, second | _rest] -> second
+    end
   end
 
   defp active_player_after(state, player) do
     active_player_after(state, position_of(state, player))
+  end
+  
+  defp rotate_until_at_front([{position, _, _} | _rest] = list, position) do
+    list
+  end
+
+  defp rotate_until_at_front([p | rest], position) do
+    rotate_until_at_front(rest ++ [p], position)
   end
 
   defp highest_bet(state) do
@@ -254,6 +293,17 @@ defmodule Poker.Game.State do
     Enum.reduce(players, {deck, Map.new}, fn(id, {the_deck, hands}) ->
       {:ok, [card1, card2], new_deck} = Deck.draw_cards(the_deck, 2)
       {new_deck, Map.put(hands, id, {card1, card2})}
+    end)
+  end
+
+  defp set_player_status(positions, player, new_status) do
+    positions
+    |> Enum.map(fn({pos, pl, _status} = data) ->
+      if pl == player do
+        {pos, pl, new_status}
+      else
+        data
+      end
     end)
   end
 
