@@ -13,16 +13,16 @@ defmodule Poker.HandRank do
 
   def compute(%Hand{ cards: cards}) do
     cards
-      |> sort_by_value # Very important to first sort the cards
-      |> compute_score
+    |> sort_by_value # Very important to first sort the cards
+    |> compute_score
   end
 
   def compare(ranks) do
     ranks
-      |> group_by_types
-      |> rank_groups_by_types
-      |> rank_each_group_by_high_card
-      |> flatten
+    |> group_by_types
+    |> rank_groups_by_types
+    |> rank_each_group_by_high_card
+    |> flatten
   end
 
   #********* Implementations ********#

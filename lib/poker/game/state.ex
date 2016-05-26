@@ -67,6 +67,12 @@ defmodule Poker.Game.State do
     end
   end
 
+  defp check_for_winner(%Game.State{ phase: :showdown, next_action: nil } = state) do
+    %Game.State{ state |
+      winner: determine_winner(state.pocket_cards, state.community_cards)
+    }
+  end
+
   defp check_for_winner(state) do
     if only_one_player_left?(state) do
       %Game.State{ state | 
@@ -99,6 +105,30 @@ defmodule Poker.Game.State do
           community_cards: flop_cards,
           active_bets: %{},
           deck: new_deck
+        }
+      :turn -> 
+        {:ok, turn_card, new_deck} = Poker.Deck.draw_card(state.deck)
+        %Game.State{ state | 
+          event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:turn)),
+          phase: :turn,
+          community_cards: [turn_card | state.community_cards],
+          active_bets: %{},
+          deck: new_deck
+        }
+      :river -> 
+        {:ok, river_card, new_deck} = Poker.Deck.draw_card(state.deck)
+        %Game.State{ state | 
+          event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:river)),
+          phase: :river,
+          community_cards: [river_card | state.community_cards],
+          active_bets: %{},
+          deck: new_deck
+        }
+      :showdown ->
+        %Game.State{ state | 
+          event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:showdown)),
+          phase: :showdown,
+          active_bets: %{},
         }
     end
   end
@@ -140,6 +170,10 @@ defmodule Poker.Game.State do
           } |> determine_action_details(state)
         }
     end
+  end
+
+  defp determine_next_action(%Game.State{ phase: :showdown } = state) do
+    %Game.State{ state | next_action: nil }
   end
 
   defp determine_next_action(%Game.State{} = state) do
@@ -265,10 +299,12 @@ defmodule Poker.Game.State do
   end
 
   defp highest_bet(state) do
-    state.active_bets
-    |> Map.to_list
-    |> Enum.map(fn({_, amount}) -> amount end)
-    |> Enum.max
+    case state.active_bets |> Map.to_list do
+      []   -> 0
+      list -> list
+              |> Enum.map(fn({_, amount}) -> amount end)
+              |> Enum.max
+    end
   end
 
   defp build_positions(%Game.State{players: players} = state) do
@@ -315,6 +351,8 @@ defmodule Poker.Game.State do
     case phase do
       :preflop -> :flop
       :flop    -> :turn
+      :turn    -> :river
+      :river   -> :showdown
     end
   end
 end

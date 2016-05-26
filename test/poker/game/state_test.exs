@@ -218,4 +218,71 @@ defmodule Poker.Game.StateTest do
     assert state.next_action == nil
     assert state.winner == "p1"
   end
+
+  test "going to the turn" do
+    state =
+      State.new(id: "game_id", small_blind: 10, big_blind: 20, players: ["p1", "p2", "p3", "p4"])
+      |> State.handle_action(Action.call("p1", amount: 10)) # Call SB
+      |> State.handle_action(Action.call("p2", amount: 20)) # Call BB
+      |> State.handle_action(Action.call("p3", amount: 20))
+      |> State.handle_action(Action.call("p4", amount: 20))
+      |> State.handle_action(Action.call("p1", amount: 10))
+      |> State.handle_action(Action.check("p2")) # Move to Flop
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to Turn
+
+    assert state.phase == :turn
+    assert length(state.community_cards) == 4
+  end
+
+  test "going to the river" do
+    state =
+      State.new(id: "game_id", small_blind: 10, big_blind: 20, players: ["p1", "p2", "p3", "p4"])
+      |> State.handle_action(Action.call("p1", amount: 10)) # Call SB
+      |> State.handle_action(Action.call("p2", amount: 20)) # Call BB
+      |> State.handle_action(Action.call("p3", amount: 20))
+      |> State.handle_action(Action.call("p4", amount: 20))
+      |> State.handle_action(Action.call("p1", amount: 10))
+      |> State.handle_action(Action.check("p2")) # Move to Flop
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to Turn
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to River
+
+    assert state.phase == :river
+    assert length(state.community_cards) == 5
+  end
+
+  test "going to the showdown" do
+    state =
+      State.new(id: "game_id", small_blind: 10, big_blind: 20, players: ["p1", "p2", "p3", "p4"])
+      |> State.handle_action(Action.call("p1", amount: 10)) # Call SB
+      |> State.handle_action(Action.call("p2", amount: 20)) # Call BB
+      |> State.handle_action(Action.call("p3", amount: 20))
+      |> State.handle_action(Action.call("p4", amount: 20))
+      |> State.handle_action(Action.call("p1", amount: 10))
+      |> State.handle_action(Action.check("p2")) # Move to Flop
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to Turn
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to River
+      |> State.handle_action(Action.check("p1"))
+      |> State.handle_action(Action.check("p2"))
+      |> State.handle_action(Action.check("p3"))
+      |> State.handle_action(Action.check("p4")) # Move to Showdown
+
+    assert state.phase == :showdown
+    assert state.next_action == nil
+    assert state.winner != nil
+  end
 end
