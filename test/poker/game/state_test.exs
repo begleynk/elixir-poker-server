@@ -217,6 +217,12 @@ defmodule Poker.Game.StateTest do
     assert state.phase == :flop
     assert state.next_action == nil
     assert state.winner == "p1"
+    assert %{ 
+      "p1" => %Poker.HandRank{},
+      "p2" => %Poker.HandRank{},
+      "p3" => %Poker.HandRank{},
+      "p4" => %Poker.HandRank{}
+    } = state.hand_values
   end
 
   test "going to the turn" do

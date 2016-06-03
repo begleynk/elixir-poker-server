@@ -11,6 +11,7 @@ defmodule Poker.Game.State do
     event_store: Game.EventStore.new,
     pot: 0,
     active_bets: Map.new,
+    hand_values: %{},
     pocket_cards: %{},
     community_cards: [],
     deck: Deck.new,
@@ -67,16 +68,18 @@ defmodule Poker.Game.State do
     end
   end
 
-  defp check_for_winner(%Game.State{ phase: :showdown, next_action: nil } = state) do
-    %Game.State{ state |
-      winner: determine_winner(state.pocket_cards, state.community_cards)
+  defp check_for_winner(%Game.State{ phase: :showdown } = state) do
+    %Game.State{ state | 
+      winner: Game.Winner.determine(state)
     }
   end
 
   defp check_for_winner(state) do
     if only_one_player_left?(state) do
       %Game.State{ state | 
-        winner: state.positions |> Enum.find(fn({_,_,status}) -> status == :playing end) |> (fn({_,pl,_}) -> pl end).()
+        winner: state.positions 
+                |> Enum.find(fn({_,_,status}) -> status == :playing end) 
+                |> (fn({_,pl,_}) -> pl end).()
       }
     else
       state
@@ -104,6 +107,7 @@ defmodule Poker.Game.State do
           phase: :flop,
           community_cards: flop_cards,
           active_bets: %{},
+          hand_values: recalculate_hand_values(state.players, flop_cards, state.pocket_cards),
           deck: new_deck
         }
       :turn -> 
@@ -112,6 +116,7 @@ defmodule Poker.Game.State do
           event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:turn)),
           phase: :turn,
           community_cards: [turn_card | state.community_cards],
+          hand_values: recalculate_hand_values(state.players, [turn_card | state.community_cards], state.pocket_cards),
           active_bets: %{},
           deck: new_deck
         }
@@ -121,6 +126,7 @@ defmodule Poker.Game.State do
           event_store: Game.EventStore.add_event(state.event_store, Game.Event.phase_transition(:river)),
           phase: :river,
           community_cards: [river_card | state.community_cards],
+          hand_values: recalculate_hand_values(state.players, [river_card | state.community_cards], state.pocket_cards),
           active_bets: %{},
           deck: new_deck
         }
@@ -323,6 +329,15 @@ defmodule Poker.Game.State do
       end)
 
     %Game.State{state | positions: positions}
+  end
+
+  defp recalculate_hand_values(players, community_cards, pocket_cards) do
+    players
+    |> Enum.map(fn(p) -> 
+         {pc1, pc2} = pocket_cards[p]
+         {p, Poker.HandRank.determine_best_hand(community_cards ++ [pc1, pc2])}
+       end)
+    |> Enum.into(Map.new)
   end
 
   defp draw_pocket_cards(deck, players) do

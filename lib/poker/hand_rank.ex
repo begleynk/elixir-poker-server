@@ -7,6 +7,16 @@ defmodule Poker.HandRank do
 
   alias Poker.{Card, Hand, HandRank}
 
+  def determine_best_hand(cards) when length(cards) > 4 do
+    [best | _rest] = 
+      five_card_combination(cards)
+      |> convert_to_hands
+      |> Enum.map(&(compute(&1)))
+      |> compare
+    
+    best
+  end
+
   def compute(%Hand{ cards: cards }) when length(cards) != 5 do
     %HandRank{type: :invalid, cards: nil}
   end
@@ -26,6 +36,22 @@ defmodule Poker.HandRank do
   end
 
   #********* Implementations ********#
+  
+  defp convert_to_hands(lists_of_cards) do
+    Enum.map(lists_of_cards, fn(cards) ->
+      Enum.reduce(cards, Hand.new, fn(card, hand) ->
+        hand |> Hand.add_card(card)
+      end)
+    end)
+  end
+
+  # Get all possible hand combinations
+  defp five_card_combination(cards), do: five_card_combination(5, cards)
+  defp five_card_combination(0, _), do: [[]]
+  defp five_card_combination(_, []), do: []
+  defp five_card_combination(n, [x|xs]) do
+    (for y <- five_card_combination(n - 1, xs), do: [x|y]) ++ five_card_combination(n, xs)
+  end
 
   # Match full houses - eg. 2,2,2 3,3
   # The high card is determined by the group of three

@@ -26,6 +26,14 @@ defmodule Poker.Game do
     :gproc.whereis_name({:n, :l, {:game, game_id}})
   end
 
+  def state(game) do
+    GenServer.call(game, :state)
+  end
+
+  def perform_action(game, %Game.Event{} = action) do
+    GenServer.call(game, {:perform_action, action})
+  end
+
   def players(game) do
     state(game).players
     |> Enum.map(fn({p, _pos, _status}) -> p |> Player.whereis |> Player.info end)
@@ -42,14 +50,6 @@ defmodule Poker.Game do
 
   def phase(game) do
     state(game).phase
-  end
-
-  def state(game) do
-    GenServer.call(game, :state)
-  end
-
-  def perform_action(game, %Game.Event{} = action) do
-    GenServer.call(game, {:perform_action, action})
   end
 
   # OTP Callbacks

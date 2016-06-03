@@ -3,6 +3,30 @@ defmodule Poker.HandRankTest do
 
   alias Poker.{Hand, HandRank, Card}
 
+  test "It computes the best possible hand from a list of cards" do
+    cards = [
+      %Card{suit: :hearts, value: 4},
+      %Card{suit: :spades, value: 5},
+      %Card{suit: :spades, value: 6},
+      %Card{suit: :spades, value: 8},
+      %Card{suit: :hearts, value: 9},
+      %Card{suit: :spades, value: 1}
+    ]
+
+    assert HandRank.determine_best_hand(cards) == %HandRank{type: :high_card, cards: [1,9,8,6,5]}
+
+    cards = [
+      %Card{suit: :hearts, value: 2},
+      %Card{suit: :spades, value: 2},
+      %Card{suit: :spades, value: 6},
+      %Card{suit: :spades, value: 8},
+      %Card{suit: :hearts, value: 9},
+      %Card{suit: :spades, value: 1}
+    ]
+
+    assert HandRank.determine_best_hand(cards) == %HandRank{type: :pair, cards: [2,2,1,9,8]}
+  end
+
   test "Hands can just have a high card" do
     hand = Hand.new
       |> Hand.add_card(%Card{suit: :hearts, value: 4})
@@ -292,5 +316,25 @@ defmodule Poker.HandRankTest do
     c = %HandRank{type: :straight_flush, cards: [9, 8, 7, 6, 5]}
 
     assert HandRank.compare([a,c,b]) == [a,c,b]
+  end
+
+  test "It correctly compares hands of the same rank" do
+    a = %HandRank{type: :four_of_a_kind, cards: [6, 6, 6, 6, 4]}
+    b = %HandRank{type: :four_of_a_kind, cards: [8, 8, 8, 8, 4]}
+    c = %HandRank{type: :four_of_a_kind, cards: [7, 7, 7, 7, 4]}
+
+    assert HandRank.compare([a,c,b]) == [b,c,a]
+
+    a = %HandRank{type: :pair, cards: [6, 6, 1, 2, 4]}
+    b = %HandRank{type: :pair, cards: [8, 8, 9, 12, 4]}
+    c = %HandRank{type: :pair, cards: [7, 7, 2, 3, 4]}
+
+    assert HandRank.compare([a,c,b]) == [b,c,a]
+
+    a = %HandRank{type: :high_card, cards: [12, 6, 1, 2, 4]}
+    b = %HandRank{type: :high_card, cards: [1, 8, 9, 3, 4]}
+    c = %HandRank{type: :high_card, cards: [11, 7, 2, 3, 4]}
+
+    assert HandRank.compare([a,c,b]) == [b,a,c]
   end
 end
