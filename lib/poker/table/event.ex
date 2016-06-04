@@ -1,5 +1,11 @@
 defmodule Poker.Table.Event do
-  defstruct id: nil, table_id: nil, type: nil, table: nil, info: %{}
+  defstruct [
+    id: nil, 
+    table_id: nil, 
+    type: nil, 
+    table: nil, 
+    info: %{}
+  ]
 
   alias Poker.{Table}
 

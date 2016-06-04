@@ -2,6 +2,8 @@ defmodule Poker.Game.EventParser do
 
   alias Poker.Game
 
+  @player_events [:call, :bet, :raise, :check, :fold]
+
   def everyone_has_acted_in_phase?(%Game.State{} = state, phase) do
     result = players_acted_in_phase(state, phase)
 
@@ -28,7 +30,7 @@ defmodule Poker.Game.EventParser do
     result
   end
 
-  defp players_acted_in_phase([%Game.Event{type: :phase_transition, phase: :preflop} | rest], phase, state, result) do
+  defp players_acted_in_phase([%Game.Event{type: :phase_transition, info: %{ phase: :preflop}} | rest], phase, state, result) do
     players_acted_in_phase(rest, phase, state,
       %{ result | 
         phase: :preflop,
@@ -42,12 +44,14 @@ defmodule Poker.Game.EventParser do
 
   defp players_acted_in_phase([%Game.Event{type: :phase_transition} = event | rest], phase, state, result) do
     players_acted_in_phase(rest, phase, state,
-      %{ result | players: build_player_state_holder(state.positions), phase: event.phase}
+      %{ result | players: build_player_state_holder(state.positions), phase: event.info.phase}
     )
   end
 
-  defp players_acted_in_phase([event | rest], phase, state, result) do
-    players_acted_in_phase(rest, phase, state, %{result | players: result.players |> update_player_state(event)})
+  defp players_acted_in_phase([%Game.Event{type: type} = event | rest], phase, state, result) when type in @player_events do
+    players_acted_in_phase(rest, phase, state, %{ result | 
+      players: result.players |> update_player_state(event)
+    })
   end
 
   defp update_player_state(players, event) do
@@ -62,11 +66,11 @@ defmodule Poker.Game.EventParser do
       :raise -> 
         players
         |> put_in([event.player, :acted], true)
-        |> put_in([event.player, :bet], event.amount)
+        |> put_in([event.player, :bet], event.info.amount)
       _ -> 
         players
         |> put_in([event.player, :acted], true)
-        |> put_in([event.player, :bet], (players |> Map.get(event.player) |> Map.get(:bet)) + event.amount)
+        |> put_in([event.player, :bet], (players |> Map.get(event.player) |> Map.get(:bet)) + event.info.amount)
     end
   end
 

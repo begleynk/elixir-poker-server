@@ -34,7 +34,11 @@ defmodule Poker.Game.State do
 
   def handle_action(state, %Game.Action{} = action) do
     if Enum.any?(state.next_action.actions, &(&1 == action.type)) do
-      update_with_event(state, Game.Event.new(action))
+      event = Game.Event.from_action(action)
+
+      state
+      |> broadcast_event(event)
+      |> update_with_event(event)
     else
       {:error, :invalid_action}
     end
@@ -236,19 +240,19 @@ defmodule Poker.Game.State do
         }
       _ ->
         %Game.State{ state | 
-          pot: state.pot + last_event.amount,
+          pot: state.pot + last_event.info.amount,
           active_bets: update_bets(state.active_bets, last_event) 
         }
     end
   end
 
   defp update_bets(bets, event) do
-    Map.update(bets, event.player, event.amount, fn(_) -> event.amount end)
+    Map.update(bets, event.player, event.info.amount, fn(_) -> event.info.amount end)
   end
 
   defp save_event(state, event) do
     %Game.State{ state | 
-      event_store: state.event_store |> Game.EventStore.add_event(event)
+      event_store: Game.EventStore.add_event(state.event_store, event)
     }
   end
 
@@ -369,5 +373,10 @@ defmodule Poker.Game.State do
       :turn    -> :river
       :river   -> :showdown
     end
+  end
+
+  defp broadcast_event(state, %Game.Event{} = event) do
+    Game.Event.broadcast!(%Game.Event{ event | game_id: state.id })
+    state 
   end
 end
