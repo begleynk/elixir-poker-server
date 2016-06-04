@@ -1,16 +1,16 @@
-defmodule Poker.TableEventTest do
+defmodule Poker.Table.EventTest do
   use ExUnit.Case
 
-  alias Poker.{TableEvent, Table, Player}
+  alias Poker.{Table, Player}
 
   test 'can subscribe to new tables being created' do
-    TableEvent.subscribe!
+    Table.Event.subscribe!
 
     {:ok, table} = Table.start_link(id: 'table_id', size: 6)
 
     %Table{id: id} = table_info = Table.info(table)
 
-    assert_receive %TableEvent{
+    assert_receive %Table.Event{
       type: :new_table,
       table: ^table_info,
       table_id: ^id,
@@ -22,14 +22,14 @@ defmodule Poker.TableEventTest do
     {:ok, player} = Player.start_link('player_id_1')
     {:ok, table} = Table.start_link(id: 'table_id', size: 6)
 
-    TableEvent.subscribe!
+    Table.Event.subscribe!
 
     :ok = player |> Player.join_table('table_id', seat: 1)
 
     %Table{id: table_id} = table_info = Table.info(table)
     player_info = Player.info(player)
 
-    assert_receive %TableEvent{
+    assert_receive %Table.Event{
       type: :player_joined_table,
       info: %{
         player: ^player_info
@@ -46,14 +46,14 @@ defmodule Poker.TableEventTest do
 
     :ok = player |> Player.join_table('table_id', seat: 1)
 
-    TableEvent.subscribe!
+    Table.Event.subscribe!
 
     :ok = player |> Player.leave_table('table_id')
 
     %Table{id: table_id} = table_info = Table.info(table)
     player_info = Player.info(player)
 
-    assert_receive %TableEvent{
+    assert_receive %Table.Event{
       type: :player_left_table,
       info: %{
         player: ^player_info

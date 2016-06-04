@@ -1,7 +1,7 @@
-defmodule Poker.TableEvent do
+defmodule Poker.Table.Event do
   defstruct id: nil, table_id: nil, type: nil, table: nil, info: %{}
 
-  alias Poker.{TableEvent}
+  alias Poker.{Table}
 
   @address {:p, :l, {:poker_topic, :table_events}}
   @types [:new_table, :player_joined_table, :player_left_table]
@@ -10,8 +10,8 @@ defmodule Poker.TableEvent do
     :gproc.reg(@address)
   end
 
-  def broadcast!(%TableEvent{ type: type } = event) when type in @types do
-    do_broadcast(%TableEvent{ event | 
+  def broadcast!(%Table.Event{ type: type } = event) when type in @types do
+    do_broadcast(%Table.Event{ event | 
       id: generate_id
     })
   end

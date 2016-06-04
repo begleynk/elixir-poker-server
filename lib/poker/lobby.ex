@@ -1,7 +1,7 @@
 defmodule Poker.Lobby do
   use GenServer
 
-  alias Poker.{TableSupervisor, Table, TableEvent}
+  alias Poker.{TableSupervisor, Table}
 
   @tracked_table_events [
     :player_joined_table,
@@ -13,7 +13,7 @@ defmodule Poker.Lobby do
   end
 
   def init(_) do
-    TableEvent.subscribe!
+    Table.Event.subscribe!
 
     {:ok, fetch_initial_tables_states}
   end
@@ -49,11 +49,11 @@ defmodule Poker.Lobby do
     {:reply, :ok, []}
   end
 
-  def handle_info(%TableEvent{type: :new_table, table: table}, tables) do
+  def handle_info(%Table.Event{type: :new_table, table: table}, tables) do
     {:noreply, tables ++ [table]}
   end
 
-  def handle_info(%TableEvent{type: type} = event, tables) when type in @tracked_table_events do
+  def handle_info(%Table.Event{type: type} = event, tables) when type in @tracked_table_events do
     {:noreply, tables |> update_with_event(event)}
   end
 
@@ -68,7 +68,7 @@ defmodule Poker.Lobby do
       |> Enum.map(fn({_, table, _, _}) -> Table.info(table) end)
   end
 
-  defp update_with_event(tables, %TableEvent{table: updated_table, table_id: table_id}) do
+  defp update_with_event(tables, %Table.Event{table: updated_table, table_id: table_id}) do
     tables |> Enum.map(fn(%Table{} = table) ->
       if table.id == table_id do
         updated_table

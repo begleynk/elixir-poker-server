@@ -2,7 +2,7 @@ defmodule Poker.Table do
   defstruct id: nil, size: nil, seats: nil
   use GenServer
 
-  alias Poker.{Table, Player, TableEvent}
+  alias Poker.{Table, Player}
 
   def start_link(id: id, size: size) do
     GenServer.start_link(__MODULE__, [id, size], [name: via_tuple(id)])
@@ -12,7 +12,7 @@ defmodule Poker.Table do
     player_pids = Map.new # Used to monitor sitting players
     table = %Table{size: size, id: id, seats: build_seats(size)}
 
-    TableEvent.broadcast!(%TableEvent{
+    Table.Event.broadcast!(%Table.Event{
       type: :new_table,
       table_id: id,
       table: table
@@ -55,7 +55,7 @@ defmodule Poker.Table do
         new_pids  = monitor_player(pids, player, player_pid)
         new_table = do_seat_player(table, player, seat)
 
-        TableEvent.broadcast!(%TableEvent{
+        Table.Event.broadcast!(%Table.Event{
           type: :player_joined_table,
           info: %{
             player: player
@@ -119,7 +119,7 @@ defmodule Poker.Table do
     new_pids  = demonitor_player(pids, pid, monitor_ref)
     new_table = remove_player_from_table(table, player_id)
 
-    TableEvent.broadcast!(%TableEvent{
+    Table.Event.broadcast!(%Table.Event{
       type: :player_left_table,
       info: %{
         player: player,
