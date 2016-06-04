@@ -55,8 +55,9 @@ defmodule Poker.Game do
   # OTP Callbacks
 
   def handle_call({:perform_action, action}, _c, state) do
-    case state |> Game.State.handle_event(action) do
-      {:ok, new_state} -> {:reply, :ok, new_state}
+    case state |> Game.State.handle_action(action) do
+      {:error, error} -> {:reply, {:error, error}, state}
+            new_state -> {:reply, :ok, new_state}
     end
   end
 
