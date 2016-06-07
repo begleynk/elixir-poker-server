@@ -12,7 +12,7 @@ defmodule Poker.Table do
     player_pids = Map.new # Used to monitor sitting players
     table = %Table{size: size, id: id, seats: build_seats(size)}
 
-    Table.Event.broadcast!(%Table.Event{
+    Table.EventBroker.broadcast!(%Table.Event{
       type: :new_table,
       table_id: id,
       table: table
@@ -55,7 +55,7 @@ defmodule Poker.Table do
         new_pids  = monitor_player(pids, player, player_pid)
         new_table = do_seat_player(table, player, seat)
 
-        Table.Event.broadcast!(%Table.Event{
+        Table.EventBroker.broadcast!(%Table.Event{
           type: :player_joined_table,
           info: %{
             player: player
@@ -119,7 +119,7 @@ defmodule Poker.Table do
     new_pids  = demonitor_player(pids, pid, monitor_ref)
     new_table = remove_player_from_table(table, player_id)
 
-    Table.Event.broadcast!(%Table.Event{
+    Table.EventBroker.broadcast!(%Table.Event{
       type: :player_left_table,
       info: %{
         player: player,

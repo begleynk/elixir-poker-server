@@ -376,7 +376,7 @@ defmodule Poker.Game.State do
   end
 
   defp broadcast_event(state, %Game.Event{} = event) do
-    Game.Event.broadcast!(%Game.Event{ event | game_id: state.id })
-    state 
+    Game.EventBroker.broadcast!(%Game.Event{ event | game_id: state.id })
+    state
   end
 end

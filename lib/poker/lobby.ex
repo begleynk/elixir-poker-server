@@ -13,7 +13,7 @@ defmodule Poker.Lobby do
   end
 
   def init(_) do
-    Table.Event.subscribe!
+    Table.EventBroker.subscribe!
 
     {:ok, fetch_initial_tables_states}
   end
