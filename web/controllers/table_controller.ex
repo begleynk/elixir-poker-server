@@ -11,8 +11,9 @@ defmodule Poker.TableController do
     render conn, data: Table.info(via_tuple(id))
   end
   
-  def create(conn, %{ "data" => %{ "attributes" => %{ "size" => size }}}) do
-    {:ok, table_info} = Lobby.create_table(size: size |> String.to_integer)
+  def create(conn, %{ "data" => %{ "attributes" => %{ "size" => size, "blinds" => [sb, bb] }}}) do
+    blinds = {String.to_integer(sb), String.to_integer(bb)}
+    {:ok, table_info} = Lobby.create_table(size: String.to_integer(size), blinds: blinds)
 
     conn
     |> put_status(201)

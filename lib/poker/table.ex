@@ -1,16 +1,21 @@
 defmodule Poker.Table do
-  defstruct id: nil, size: nil, seats: nil
+  defstruct id: nil, size: nil, seats: nil, blinds: nil, current_game: nil
   use GenServer
 
-  alias Poker.{Table, Player}
+  alias Poker.{Table, Player, GameSupervisor}
 
-  def start_link(id: id, size: size) do
-    GenServer.start_link(__MODULE__, [id, size], [name: via_tuple(id)])
+  def start_link(id: id, size: size, blinds: blinds) do
+    GenServer.start_link(__MODULE__, [id, size, blinds], [name: via_tuple(id)])
   end
 
-  def init([id, size]) do
+  def init([id, size, blinds]) do
     player_pids = Map.new # Used to monitor sitting players
-    table = %Table{size: size, id: id, seats: build_seats(size)}
+    table = %Table{
+      id: id, 
+      size: size, 
+      blinds: blinds, 
+      seats: build_seats(size)
+    }
 
     Table.EventBroker.broadcast!(%Table.Event{
       type: :new_table,
@@ -37,8 +42,16 @@ defmodule Poker.Table do
     GenServer.call(table, :leave)
   end
 
+  def current_game(table) do
+    GenServer.call(table, :current_game)
+  end
+
   def handle_call(:info, _caller, {table, _pids} = state) do
     {:reply, table, state}
+  end
+
+  def handle_call(:current_game, _caller, {table, _pids} = state) do
+    {:reply, table.current_game, state}
   end
 
   def handle_call(:leave, {player_pid,_}, state) do
@@ -64,7 +77,21 @@ defmodule Poker.Table do
           table_id: new_table.id,
         })
 
+        GenServer.cast(self, :maybe_start_new_game)
+
         {:reply, :ok, {new_table, new_pids}}
+    end
+  end
+
+  def handle_cast(:maybe_start_new_game, {table, pids} = state) do
+    if enough_players_sitting(table) do
+      {:ok, game_pid} = GameSupervisor.start_child(
+        players: sitting_players(table), 
+        blinds: table.blinds
+      )
+      {:noreply, {%Table{table | current_game: game_pid}, pids}}
+    else
+      {:noreply, state}
     end
   end
 
@@ -81,6 +108,24 @@ defmodule Poker.Table do
                       :empty -> false
            end
          end)
+  end
+
+  defp enough_players_sitting(table) do
+    player_count(table) > 1
+  end
+
+  defp player_count(table) do
+    table.seats
+    |> Map.to_list
+    |> Enum.filter(fn({_, player}) -> player != :empty end)
+    |> length
+  end
+
+  defp sitting_players(table) do
+    table.seats
+    |> Map.to_list
+    |> Enum.filter(fn({_, player}) -> player != :empty end)
+    |> Enum.map(fn({_, player}) -> player end)
   end
 
   defp seat_taken?(%Table{seats: seats}, seat) do

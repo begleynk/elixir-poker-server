@@ -9,6 +9,7 @@ defmodule Poker do
     children = [
       # Start table supervisor
       supervisor(Poker.TableSupervisor, []),
+      supervisor(Poker.GameSupervisor, []),
       # Star Lobby
       worker(Poker.Lobby, []),
       # Start the endpoint when the application starts

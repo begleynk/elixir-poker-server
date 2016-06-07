@@ -8,8 +8,8 @@ defmodule Poker.TableControllerTest do
   end
 
   test "GET /api/tables - returns list of running tables", %{ conn: conn } do
-    Poker.Lobby.create_table(size: 2)
-    Poker.Lobby.create_table(size: 3)
+    Poker.Lobby.create_table(size: 2, blinds: {20, 40})
+    Poker.Lobby.create_table(size: 3, blinds: {20, 40})
 
     conn = get conn, table_path(conn, :index)
 
@@ -19,6 +19,7 @@ defmodule Poker.TableControllerTest do
         "id" => id,
         "attributes" => %{
           "size" => 2,
+          "blinds" => [20,40],
           "seats" => %{
             "1" => "empty",
             "2" => "empty"
@@ -31,6 +32,7 @@ defmodule Poker.TableControllerTest do
         "id" => id2,
         "attributes" => %{
           "size" => 3,
+          "blinds" => [20,40],
           "seats" => %{
             "1" => "empty",
             "2" => "empty",
@@ -45,7 +47,7 @@ defmodule Poker.TableControllerTest do
   end
 
   test "GET /api/tables/:id" do
-    {:ok, table} = Poker.Lobby.create_table(size: 3)
+    {:ok, table} = Poker.Lobby.create_table(size: 3, blinds: {20, 40})
 
     conn = get conn, table_path(conn, :show, table.id)
 
@@ -55,6 +57,7 @@ defmodule Poker.TableControllerTest do
         "id" => id,
         "attributes" => %{
           "size" => 3,
+          "blinds" => [20,40],
           "seats" => %{
             "1" => "empty",
             "2" => "empty",
@@ -73,7 +76,8 @@ defmodule Poker.TableControllerTest do
       "data" => %{
         "type" => "table",
         "attributes" => %{
-          "size" => 4
+          "size" => 4,
+          "blinds" => [20,40]
         }
       }
     }

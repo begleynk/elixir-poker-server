@@ -1,7 +1,7 @@
-defmodule Poker.TableSupervisor do
+defmodule Poker.GameSupervisor do
   use Supervisor
 
-  alias Poker.{Table}
+  alias Poker.{Game}
 
   def start_link do
     Supervisor.start_link(__MODULE__, nil, name: __MODULE__)
@@ -9,14 +9,14 @@ defmodule Poker.TableSupervisor do
   
   def init(_) do
     children = [
-      worker(Table, [])
+      worker(Game, [])
     ]
 
     supervise(children, strategy: :simple_one_for_one)
   end
 
-  def start_child(size: size, blinds: blinds) do
-    Supervisor.start_child(__MODULE__, [[id: generate_id, size: size, blinds: blinds]])
+  def start_child(players: players, blinds: blinds) do
+    Supervisor.start_child(__MODULE__, [players, blinds, generate_id])
   end
 
   def which_children do
@@ -24,6 +24,6 @@ defmodule Poker.TableSupervisor do
   end
 
   defp generate_id do
-    "table_" <> (UUID.uuid4(:hex) |> String.slice(0, 8))
+    "game_" <> (UUID.uuid4(:hex) |> String.slice(0, 8))
   end
 end

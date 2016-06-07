@@ -5,13 +5,17 @@ defmodule Poker.TableView do
   alias Poker.{Table}
 
   location "/api/tables/:id"
-  attributes [:seats, :size]
+  attributes [:seats, :size, :blinds]
 
   def seats(%Table{ seats: seats }, _conn) do
     seats 
     |> Map.to_list
     |> convert_keys_to_strings
     |> Enum.into(Map.new)
+  end
+
+  def blinds(%Table{ blinds: {sb, bb}}, _conn) do
+    [sb, bb]
   end
 
   defp convert_keys_to_strings(seats) do

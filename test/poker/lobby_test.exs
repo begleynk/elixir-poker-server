@@ -8,7 +8,7 @@ defmodule Poker.LobbyTest do
   end
 
   test 'it can start new tables' do
-    {:ok, _table_pid} = Lobby.create_table(size: 4)
+    {:ok, _table_pid} = Lobby.create_table(size: 4, blinds: {20, 40})
 
     _tables = [table] = Lobby.tables
 
@@ -24,7 +24,7 @@ defmodule Poker.LobbyTest do
 
   test 'it tracks table events to update its local caches of tables' do
     {:ok, player} = Player.start_link('player_id_1')
-    {:ok, _table_pid} = Lobby.create_table(size: 4)
+    {:ok, _table_pid} = Lobby.create_table(size: 4, blinds: {20, 40})
     
     [table] = Lobby.tables
 

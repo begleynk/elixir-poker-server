@@ -28,8 +28,8 @@ defmodule Poker.Lobby do
     GenServer.call(__MODULE__, :clear)
   end
 
-  def create_table(size: size) do
-    GenServer.call(__MODULE__, {:create_table, %{ size: size }})
+  def create_table(size: size, blinds: {_sb, _bb} = blinds) do
+    GenServer.call(__MODULE__, {:create_table, %{ size: size, blinds: blinds }})
   end
 
   # GenServer Callbacks
@@ -38,8 +38,8 @@ defmodule Poker.Lobby do
     {:reply, s, s}
   end
 
-  def handle_call({:create_table, %{ size: size }}, _caller, s) do
-    {:ok, table} = TableSupervisor.start_child(size: size)
+  def handle_call({:create_table, %{ size: size, blinds: blinds }}, _caller, s) do
+    {:ok, table} = TableSupervisor.start_child(size: size, blinds: blinds)
     info = %Table{} = Table.info(table)
 
     {:reply, {:ok, info}, s}
