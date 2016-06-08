@@ -21,10 +21,6 @@ defmodule Poker.Game.EventBroker do
     |> do_broadcast
   end
 
-  defp add_identifier(event) do
-    %Game.Event{ event | id: generate_id }
-  end
-
   defp do_broadcast(%Game.Event{ table_id: table_id } = event) do
     table_id
     |> table_address
@@ -33,6 +29,10 @@ defmodule Poker.Game.EventBroker do
 
   defp table_address(table_id) do
     {:p, :l, {:poker_topic, :game_events, table_id}}
+  end
+
+  defp add_identifier(event) do
+    %Game.Event{ event | id: generate_id }
   end
 
   defp generate_id do
