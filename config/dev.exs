@@ -37,5 +37,5 @@ config :poker, Poker.Repo,
   username: "postgres",
   password: "postgres",
   database: "poker_dev",
-  hostname: "localhost",
+  hostname: "localdocker",
   pool_size: 10

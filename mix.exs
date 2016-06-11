@@ -27,7 +27,8 @@ defmodule Poker.Mixfile do
         :gettext,
         :phoenix_ecto, 
         :postgrex,
-        :gproc
+        :gproc,
+        :faker
       ]
     ]
   end
@@ -51,7 +52,10 @@ defmodule Poker.Mixfile do
       {:uuid, "~> 1.1" },
       {:cors_plug, "~> 1.1"},
       {:gproc, "~> 0.5"},
-      {:ja_serializer, "~> 0.8.1"}
+      {:comeonin, "~> 2.4"},
+      {:guardian, "~> 0.12.0"},
+      {:ja_serializer, "~> 0.8.1"},
+      {:faker, "~> 0.5"}
     ]
   end
 

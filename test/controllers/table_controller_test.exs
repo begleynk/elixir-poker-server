@@ -87,6 +87,7 @@ defmodule Poker.TableControllerTest do
     assert %{
       "data" => %{
         "id" => id,
+        "type" => "table",
         "attributes" => %{
           "size" => 4,
           "seats" => %{

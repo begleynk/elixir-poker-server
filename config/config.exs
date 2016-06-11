@@ -34,3 +34,12 @@ config :phoenix, :format_encoders,
 config :plug, :mimes, %{
   "application/vnd.api+json" => ["json-api"]
 }
+
+config :guardian, Guardian,
+  allowed_algos: ["HS512"], # optional
+  verify_module: Guardian.JWT,  # optional
+  issuer: "Poker",
+  ttl: { 30, :days },
+  verify_issuer: true, # optional
+  secret_key: "asd",
+  serializer: Poker.GuardianSerializer

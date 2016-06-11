@@ -8,8 +8,12 @@ defmodule Poker.Router do
   scope "/api", Poker do
     pipe_through :api
 
-    resources "/tables", TableController, only: [:index, :show, :create]
-    resources "/session", SessionController, only: [:index]
+    scope "/v1" do
+      resources "/tables", TableController, only: [:index, :show, :create]
+      resources "/session", SessionController, only: [:index]
+
+      post "/registrations", RegistrationController, :create
+    end
   end
 
   # Other scopes may use custom stacks.
