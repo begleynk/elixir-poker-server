@@ -1,13 +1,22 @@
 defmodule Poker.TableControllerTest do
   use Poker.ConnCase
+  import Poker.TestHelpers
 
-  alias Poker.{TestHelpers}
+  setup %{conn: conn} = config do
+    conn = 
+      conn
+      |> add_json_api_headers
 
-  setup %{conn: conn} do
-    {:ok, conn: conn |> TestHelpers.add_json_api_headers}
+    if username = config[:sign_in] do
+      user = insert_user(username: username) 
+      {:ok, conn: conn |> add_token_for(user), user: user}
+    else
+      {:ok, conn: conn}
+    end
   end
 
-  test "GET /api/tables - returns list of running tables", %{ conn: conn } do
+  @tag sign_in: "TheDurr"
+  test "GET /api/tables - returns list of running tables", %{ conn: conn, user: _user} do
     Poker.Lobby.create_table(size: 2, blinds: {20, 40})
     Poker.Lobby.create_table(size: 3, blinds: {20, 40})
 
@@ -46,7 +55,8 @@ defmodule Poker.TableControllerTest do
     } = json_response(conn, 200)
   end
 
-  test "GET /api/tables/:id" do
+  @tag sign_in: "TheDurr"
+  test "GET /api/tables/:id", %{ conn: conn, user: _user } do
     {:ok, table} = Poker.Lobby.create_table(size: 3, blinds: {20, 40})
 
     conn = get conn, table_path(conn, :show, table.id)
@@ -71,7 +81,8 @@ defmodule Poker.TableControllerTest do
     } = json_response(conn, 200)
   end
 
-  test "POST /api/tables - creates a new table" do
+  @tag sign_in: "TheDurr"
+  test "POST /api/tables - creates a new table", %{ conn: conn, user: _user } do
     payload = %{
       "data" => %{
         "type" => "table",

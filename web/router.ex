@@ -5,20 +5,24 @@ defmodule Poker.Router do
     plug :accepts, ["json", "json-api"]
   end
 
+  pipeline :authenticated_api do
+    plug Guardian.Plug.VerifyHeader, realm: "Bearer"
+    plug Guardian.Plug.EnsureAuthenticated, handler: Poker.TokenController
+    plug Guardian.Plug.LoadResource
+  end
+
   scope "/api", Poker do
     pipe_through :api
 
     scope "/v1" do
       post "/registrations", RegistrationController, :create
-      resources "/session", TokenController, only: [:create]
+      post "/tokens", TokenController, :create
 
+      # All routes below are authenticated
+      pipe_through :authenticated_api
+
+      get "/current_user", CurrentUserController, :index
       resources "/tables", TableController, only: [:index, :show, :create]
-      resources "/current_user", CurrentUserController, only: [:show]
     end
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", Poker do
-  #   pipe_through :api
-  # end
 end
