@@ -17,3 +17,6 @@ config :poker, Poker.Repo,
   database: "poker_test",
   hostname: "localdocker",
   pool: Ecto.Adapters.SQL.Sandbox
+
+config :comeonin, :bcrypt_log_rounds, 4
+config :comeonin, :pbkdf2_rounds, 1
