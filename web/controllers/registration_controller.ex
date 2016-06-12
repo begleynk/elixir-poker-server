@@ -3,7 +3,7 @@ defmodule Poker.RegistrationController do
 
   alias Poker.{Repo, User}
 
-  # plug :scrub_params, "user" when action in [:create]
+  plug :scrub_params, "data" when action in [:create]
 
   def create(conn, %{"data" => %{ "type" => "user" }}) do
     changeset = User.new_user_changeset

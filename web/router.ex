@@ -9,10 +9,11 @@ defmodule Poker.Router do
     pipe_through :api
 
     scope "/v1" do
-      resources "/tables", TableController, only: [:index, :show, :create]
-      resources "/session", SessionController, only: [:index]
-
       post "/registrations", RegistrationController, :create
+      resources "/session", TokenController, only: [:create]
+
+      resources "/tables", TableController, only: [:index, :show, :create]
+      resources "/current_user", CurrentUserController, only: [:show]
     end
   end
 
