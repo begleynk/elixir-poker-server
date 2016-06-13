@@ -1,14 +1,20 @@
 defmodule Poker.TableController do
   use Poker.Web, :controller
 
-  alias Poker.{Lobby, Table}
+  alias Poker.{Lobby, Table, TableView, TableIndexView}
 
   def index(conn, _params) do
-    render conn, data: Lobby.tables
+    conn
+    |> render(TableIndexView, :index, data: Lobby.tables)
   end
 
   def show(conn, %{ "id" => id }) do
-    render conn, data: Table.info(via_tuple(id))
+    table_info =
+      Table.whereis(id)
+      |> Table.info
+
+    conn
+    |> render(TableView, :show, data: table_info)
   end
   
   def create(conn, %{ "data" => %{ "attributes" => %{ "size" => size, "blinds" => [sb, bb] }}}) do
@@ -17,7 +23,7 @@ defmodule Poker.TableController do
 
     conn
     |> put_status(201)
-    |> render(:show, data: table_info)
+    |> render(TableView, :show, data: table_info, include: "seats")
   end
 
   defp via_tuple(table_id) do

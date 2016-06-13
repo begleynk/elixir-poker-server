@@ -14,12 +14,7 @@ defmodule Poker.LobbyTest do
 
     assert table.id != nil
     assert table.size == 4
-    assert table.seats == %{ 
-      1 => :empty, 
-      2 => :empty, 
-      3 => :empty, 
-      4 => :empty
-    }
+    assert length(table.seats) == 4
   end
 
   test 'it tracks table events to update its local caches of tables' do
@@ -31,11 +26,11 @@ defmodule Poker.LobbyTest do
     Player.join_table(player, table.id, seat: 1)
 
     [updated_table] = Lobby.tables 
-    assert updated_table.seats[1] == Player.info(player)
+    assert updated_table.seats |> Enum.at(1) |> Map.fetch!(:player) == Player.info(player)
 
     Player.leave_table(player, updated_table.id)
 
     [updated_table] = Lobby.tables 
-    assert updated_table.seats[1] == :empty
+    assert updated_table.seats |> Enum.at(1) |> Map.fetch!(:status) == :empty
   end
 end

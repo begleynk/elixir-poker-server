@@ -14,7 +14,7 @@ defmodule Poker.Table do
       id: id, 
       size: size, 
       blinds: blinds, 
-      seats: build_seats(size)
+      seats: build_seats(size, id)
     }
 
     Table.EventBroker.broadcast!(%Table.Event{
@@ -100,14 +100,12 @@ defmodule Poker.Table do
   end
 
   defp player_already_sitting?(%Table{seats: seats}, player) do
-    seats 
-      |> Map.to_list
-      |> Enum.any?(fn({_seat, occupier}) ->
-           case occupier do
-             %Player{id: id} -> id == player.id
-                      :empty -> false
-           end
-         end)
+    Enum.any?(seats, fn(%{ player: p }) ->
+      case p do
+        %Player{id: id} -> id == player.id
+                    nil -> false
+      end
+    end)
   end
 
   defp enough_players_sitting(table) do
@@ -115,21 +113,30 @@ defmodule Poker.Table do
   end
 
   defp player_count(table) do
-    table.seats
-    |> Map.to_list
-    |> Enum.filter(fn({_, player}) -> player != :empty end)
-    |> length
+    Enum.count(table.seats, fn(seat) ->
+      seat.status !== :empty
+    end)
   end
 
   defp sitting_players(table) do
     table.seats
-    |> Map.to_list
-    |> Enum.filter(fn({_, player}) -> player != :empty end)
-    |> Enum.map(fn({_, player}) -> player end)
+    |> Enum.filter(fn(seat) -> seat.status != :empty end)
+    |> Enum.map(fn(seat) -> seat.player.id end)
   end
 
-  defp seat_taken?(%Table{seats: seats}, seat) do
-    seats[seat] !== :empty
+  defp seat_taken?(%Table{seats: seats}, position) do
+    status = 
+      seats 
+      |> seat_in_position(position)
+      |> Map.fetch!(:status) 
+    
+    status !== :empty
+  end
+
+  defp seat_in_position(seats, position) do
+    Enum.find(seats, fn(%{position: pos}) ->
+      position == pos
+    end)
   end
 
   defp monitor_player(pids, player, pid) do
@@ -142,24 +149,22 @@ defmodule Poker.Table do
     pids |> Map.delete(pid)
   end
 
-  defp do_seat_player(%Table{seats: seats} = table, player, seat) do
+  defp do_seat_player(%Table{seats: seats} = table, player, position) do
     %Table{ table | 
-      seats: Map.update!(seats, seat, fn(_) -> player end)
+      seats: Enum.map(seats, fn(seat) ->
+        if seat.position == position do
+          seat
+          |> Map.put(:player, player)
+          |> Map.put(:status, :playing)
+        else
+          seat
+        end
+      end)
     }
   end
 
   defp do_remove_player(pid, {%Table{} = table, pids}) do
     {player_id, monitor_ref} = pids[pid]
-
-    {_, player}
-      = table.seats
-      |> Map.to_list
-      |> Enum.find(fn({_,p}) -> 
-           case p do
-             :empty -> false
-                p   -> p.id == player_id
-           end
-      end)
 
     new_pids  = demonitor_player(pids, pid, monitor_ref)
     new_table = remove_player_from_table(table, player_id)
@@ -167,7 +172,7 @@ defmodule Poker.Table do
     Table.EventBroker.broadcast!(%Table.Event{
       type: :player_left_table,
       info: %{
-        player: player,
+        player: %Player{ id: player_id },
       },
       table: new_table,
       table_id: new_table.id,
@@ -178,27 +183,20 @@ defmodule Poker.Table do
 
   defp remove_player_from_table(%Table{seats: seats} = table, player_id) do
     %Table{ table |
-      seats: seats
-       |> Map.to_list
-       |> Enum.map(fn({seat, p}) ->
-            case p do
-              :empty -> {seat, :empty}
-              %Player{} -> 
-                if p.id == player_id do
-                  {seat, :empty}
-                else
-                  {seat, p}
-                end
-            end
-          end)
-       |> Enum.into(Map.new)
+      seats: Enum.map(seats, fn(seat) ->
+        case seat.player do
+          %Player{ id: ^player_id } -> %{seat | player: nil, status: :empty}
+          %Player{} -> seat
+                nil -> seat
+        end
+      end)
     }
   end
 
-  defp build_seats(size) do
-    1..size |> Enum.reduce(Map.new, fn(i, acc) ->
-      acc |> Map.put(i, :empty)
-    end)
+  defp build_seats(size, table_id) do
+    0..(size - 1) |> Enum.reduce([], fn(i, acc) ->
+      [%{ status: :empty, player: nil, id: i, position: i, table: table_id } | acc]
+    end) |> Enum.reverse
   end
 
   defp via_tuple(id) do

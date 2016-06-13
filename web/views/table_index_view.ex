@@ -1,4 +1,4 @@
-defmodule Poker.TableView do
+defmodule Poker.TableIndexView do
   use Poker.Web, :view
   use JaSerializer.PhoenixView
 
@@ -6,12 +6,6 @@ defmodule Poker.TableView do
 
   location "/api/v1/tables/:id"
   attributes [:size, :blinds, :occupied_seats]
-
-  has_many :seats, 
-    type: "seat", 
-    include: true,
-    serializer: Poker.SeatView,
-    link: "/api/v1/tables/:id/seats"
 
   def blinds(%Table{ blinds: {sb, bb}}, _conn) do
     [sb, bb]
