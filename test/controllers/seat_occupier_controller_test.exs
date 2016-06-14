@@ -17,7 +17,7 @@ defmodule Poker.SeatOccupierControllerTest do
 
   @tag sign_in: "TheDurr"
   test "a player can sit down at a table", %{ conn: conn, user: %{ id: user_id }} do
-    {:ok, table_info} = Lobby.create_table(size: 4, blinds: {20, 40})
+    {:ok, table_info, table_pid} = Lobby.create_table(size: 4, blinds: {20, 40})
 
     payload = %{
       "data" => %{
@@ -28,9 +28,9 @@ defmodule Poker.SeatOccupierControllerTest do
 
     conn = patch conn, table_seat_occupier_path(conn, :edit, table_info.id, 0), payload
     
-    table_info = Table.whereis(table_info.id) |> Table.info
+    table_info = Table.info(table_pid)
     assert %{
-      player: %Player{ id: ^user_id },
+      player: ^user_id,
       status: :playing
     } = table_info.seats |> Enum.at(0)
 

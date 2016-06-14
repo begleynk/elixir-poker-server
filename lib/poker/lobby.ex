@@ -39,10 +39,10 @@ defmodule Poker.Lobby do
   end
 
   def handle_call({:create_table, %{ size: size, blinds: blinds }}, _caller, s) do
-    {:ok, table} = TableSupervisor.start_child(size: size, blinds: blinds)
-    info = %Table{} = Table.info(table)
+    {:ok, table_pid} = TableSupervisor.start_child(size: size, blinds: blinds)
+    info = %Table{} = Table.info(table_pid)
 
-    {:reply, {:ok, info}, s}
+    {:reply, {:ok, info, table_pid}, s}
   end
 
   def handle_call(:clear, _,_table) do

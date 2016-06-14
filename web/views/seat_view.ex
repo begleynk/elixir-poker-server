@@ -29,7 +29,7 @@ defmodule Poker.SeatView do
     case seat.player do
       nil -> nil 
       player -> 
-        Player.whereis(player.id)
+        Player.whereis(player)
         |> Player.info
     end
   end

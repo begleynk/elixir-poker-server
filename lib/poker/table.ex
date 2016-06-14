@@ -34,7 +34,7 @@ defmodule Poker.Table do
     GenServer.call(table, :info)
   end
 
-  def sit(table, player: player, seat: seat) do
+  def sit(table, player: %Player{} = player, seat: seat) do
     GenServer.call(table, {:sit, player, seat})
   end
 
@@ -110,8 +110,8 @@ defmodule Poker.Table do
   defp player_already_sitting?(%Table{seats: seats}, player) do
     Enum.any?(seats, fn(%{ player: p }) ->
       case p do
-        %Player{id: id} -> id == player.id
-                    nil -> false
+        nil -> false
+         id -> id == player.id
       end
     end)
   end
@@ -129,7 +129,7 @@ defmodule Poker.Table do
   defp sitting_players(table) do
     table.seats
     |> Enum.filter(fn(seat) -> seat.status != :empty end)
-    |> Enum.map(fn(seat) -> seat.player.id end)
+    |> Enum.map(fn(seat) -> seat.player end)
   end
 
   defp seat_taken?(%Table{seats: seats}, position) do
@@ -162,7 +162,7 @@ defmodule Poker.Table do
       seats: Enum.map(seats, fn(seat) ->
         if seat.position == position do
           seat
-          |> Map.put(:player, player)
+          |> Map.put(:player, player.id)
           |> Map.put(:status, :playing)
         else
           seat
@@ -193,9 +193,9 @@ defmodule Poker.Table do
     %Table{ table |
       seats: Enum.map(seats, fn(seat) ->
         case seat.player do
-          %Player{ id: ^player_id } -> %{seat | player: nil, status: :empty}
-          %Player{} -> seat
-                nil -> seat
+          ^player_id -> %{seat | player: nil, status: :empty}
+            other_id -> seat
+                 nil -> seat
         end
       end)
     }

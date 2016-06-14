@@ -1,5 +1,5 @@
 defmodule Poker.Player do
-  defstruct id: nil
+  defstruct id: nil, email: "", username: ""
 
   alias Poker.{Player, Table, Game, Game.Event}
   use GenServer
