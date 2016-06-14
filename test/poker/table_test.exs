@@ -11,10 +11,9 @@ defmodule Poker.TableTest do
     :ok = player1 |> Player.join_table("table_id", seat: 0)
     :ok = player2 |> Player.join_table("table_id", seat: 1)
 
-    state = Table.info(table)
 
-    assert state.seats |> Enum.at(0) |> Map.fetch!(:player) == player1 |> Player.info
-    assert state.seats |> Enum.at(1) |> Map.fetch!(:player) == player2 |> Player.info
+    assert Table.seat(table, 0).player == player1 |> Player.info
+    assert Table.seat(table, 1).player == player2 |> Player.info
   end
 
   test "a player cannot join a table twice" do
@@ -36,8 +35,7 @@ defmodule Poker.TableTest do
     :ok = player1 |> Player.join_table("table_id", seat: 1)
     assert {:error, :seat_taken} == player2 |> Player.join_table("table_id", seat: 1)
 
-    state = Table.info(table)
-    assert state.seats |> Enum.at(1) |> Map.fetch!(:player) == player1 |> Player.info
+    assert Table.seat(table, 1).player == player1 |> Player.info
   end
 
   test "a player looses their seat if they disconnect" do
@@ -45,8 +43,7 @@ defmodule Poker.TableTest do
     {:ok, table} = Table.start_link(id: "table_id", size: 6, blinds: {20,40})
 
     :ok = player1 |> Player.join_table("table_id", seat: 1)
-    state = Table.info(table)
-    assert state.seats |> Enum.at(1) |> Map.fetch!(:player) == player1 |> Player.info
+    assert Table.seat(table, 1).player == player1 |> Player.info
 
     player1 |> Process.exit(:kill)
 
@@ -61,13 +58,12 @@ defmodule Poker.TableTest do
     {:ok, table} = Table.start_link(id: "table_id", size: 6, blinds: {20,40})
 
     :ok = player1 |> Player.join_table("table_id", seat: 1)
-    state = Table.info(table)
-    assert state.seats |> Enum.at(1) |> Map.fetch!(:player) == player1 |> Player.info
+
+    assert Table.seat(table, 1).player == player1 |> Player.info
 
     :ok = player1 |> Player.leave_table("table_id")
 
-    state = Table.info(table)
-    assert state.seats |> Enum.at(1) |> Map.fetch!(:status) == :empty
+    assert Table.seat(table, 1).status == :empty
   end
 
   test "a game starts when anough players join the table" do

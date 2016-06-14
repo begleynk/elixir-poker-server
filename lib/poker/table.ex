@@ -46,8 +46,16 @@ defmodule Poker.Table do
     GenServer.call(table, :current_game)
   end
 
+  def seat(table, seat) do
+    GenServer.call(table, {:seat, seat})
+  end
+
   def handle_call(:info, _caller, {table, _pids} = state) do
     {:reply, table, state}
+  end
+
+  def handle_call({:seat, seat}, _caller, {table, _pids} = state) do
+    {:reply, table.seats |> Enum.at(seat), state}
   end
 
   def handle_call(:current_game, _caller, {table, _pids} = state) do

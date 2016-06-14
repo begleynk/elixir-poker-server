@@ -1,5 +1,5 @@
 defmodule Poker.SeatOccupierController do
-  use Poker.Web, :controller
+  use Poker.AuthenticatedController
 
   alias Poker.{Table, Player, SeatView}
 
@@ -9,23 +9,9 @@ defmodule Poker.SeatOccupierController do
 
     seat = 
       Table.whereis(table_id) 
-      |> Table.info
-      |> Map.fetch!(:seats) 
-      |> Enum.find(&(&1.player == %Player{ id: user.id }))
+      |> Table.seat(String.to_integer(seat_id))
 
     conn
     |> render(SeatView, :show, data: seat)
-  end
-
-  def action(conn, params) do
-    apply(
-      __MODULE__,
-      action_name(conn),
-      [
-        conn, 
-        conn.params, 
-        Guardian.Plug.current_resource(conn),
-      ]
-    )
   end
 end
