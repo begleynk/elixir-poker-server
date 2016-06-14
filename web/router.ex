@@ -22,7 +22,11 @@ defmodule Poker.Router do
       pipe_through :authenticated_api
 
       get "/current_user", CurrentUserController, :index
-      resources "/tables", TableController, only: [:index, :show, :create]
+      resources "/tables", TableController, only: [:index, :show, :create] do
+        resources "/seats", SeatController, only: [] do
+          patch "/occupier", SeatOccupierController, :edit, as: "occupier"
+        end
+      end
     end
   end
 end

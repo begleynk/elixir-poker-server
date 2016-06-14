@@ -17,7 +17,13 @@ defmodule Poker.Player do
   end
 
   def whereis(player_id) do
-    :gproc.whereis_name({:n, :l, {:player, player_id}})
+    case :gproc.whereis_name({:n, :l, {:player, player_id}}) do
+      :undefined -> 
+        {:ok, player_pid} = Player.start_link(player_id)
+        player_pid
+      pid -> 
+        pid
+    end
   end
 
   def info(player) do
