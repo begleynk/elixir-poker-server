@@ -8,10 +8,6 @@ defmodule Poker.Player do
     GenServer.start_link(__MODULE__, [id], [name: via_tuple(id)])
   end
 
-  def start(id) do
-    GenServer.start(__MODULE__, [id], [])
-  end
-
   def init([id]) do
     {:ok, %Player{id: id}}
   end
@@ -19,7 +15,7 @@ defmodule Poker.Player do
   def whereis(player_id) do
     case :gproc.whereis_name({:n, :l, {:player, player_id}}) do
       :undefined -> 
-        {:ok, player_pid} = Player.start_link(player_id)
+        {:ok, player_pid} = Player.start_link(player_id) 
         player_pid
       pid -> 
         pid
