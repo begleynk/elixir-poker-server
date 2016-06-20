@@ -38,7 +38,7 @@ defmodule Poker.SeatOccupierControllerTest do
     assert %{
       "data" => %{
         "id" => "0",
-        "type" => "seat",
+        "type" => "seats",
         "attributes" => %{
           "position" => "0",
           "status" => "playing"
@@ -71,7 +71,7 @@ defmodule Poker.SeatOccupierControllerTest do
     assert %{
       "data" => %{
         "id" => "0",
-        "type" => "seat",
+        "type" => "seats",
         "attributes" => %{
           "position" => "0",
           "status" => "empty"

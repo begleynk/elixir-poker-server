@@ -36,9 +36,9 @@ defmodule Poker.TableControllerTest do
               "related" => table_seats_url
             },
             "data" => [
-              %{ "type" => "seat", "id" => "0" },
-              %{ "type" => "seat", "id" => "1" },
-              %{ "type" => "seat", "id" => "2" }
+              %{ "type" => "seats", "id" => "0" },
+              %{ "type" => "seats", "id" => "1" },
+              %{ "type" => "seats", "id" => "2" }
             ]
           }
         },
@@ -48,21 +48,21 @@ defmodule Poker.TableControllerTest do
       },
       "included" => [
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "0",
           "attributes" => %{
             "status" => "empty",
           }
         },
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "1",
           "attributes" => %{
             "status" => "empty",
           }
         },
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "2",
           "attributes" => %{
             "status" => "empty",
@@ -110,7 +110,7 @@ defmodule Poker.TableControllerTest do
   test "POST /api/v1/tables - creates a new table", %{ conn: conn, user: _user } do
     payload = %{
       "data" => %{
-        "type" => "table",
+        "type" => "tables",
         "attributes" => %{
           "size" => 4,
           "blinds" => [40,80]
@@ -123,6 +123,7 @@ defmodule Poker.TableControllerTest do
     assert %{
       "data" => %{
         "id" => id,
+        "type" => "tables",
         "attributes" => %{
           "size" => 4,
           "blinds" => [40,80],
@@ -134,10 +135,10 @@ defmodule Poker.TableControllerTest do
               "related" => table_seats_url
             },
             "data" => [
-              %{ "type" => "seat", "id" => "0" },
-              %{ "type" => "seat", "id" => "1" },
-              %{ "type" => "seat", "id" => "2" },
-              %{ "type" => "seat", "id" => "3" }
+              %{ "type" => "seats", "id" => "0" },
+              %{ "type" => "seats", "id" => "1" },
+              %{ "type" => "seats", "id" => "2" },
+              %{ "type" => "seats", "id" => "3" }
             ]
           }
         },
@@ -147,28 +148,28 @@ defmodule Poker.TableControllerTest do
       },
       "included" => [
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "0",
           "attributes" => %{
             "status" => "empty",
           }
         },
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "1",
           "attributes" => %{
             "status" => "empty",
           }
         },
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "2",
           "attributes" => %{
             "status" => "empty",
           }
         },
         %{
-          "type" => "seat",
+          "type" => "seats",
           "id" => "3",
           "attributes" => %{
             "status" => "empty",

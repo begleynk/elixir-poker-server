@@ -8,10 +8,13 @@ defmodule Poker.TableView do
   attributes [:size, :blinds, :occupied_seats]
 
   has_many :seats, 
-    type: "seat", 
     include: true,
     serializer: Poker.SeatView,
     link: "/api/v1/tables/:id/seats"
+
+  def type do
+    "tables"
+  end
 
   def blinds(%Table{ blinds: {sb, bb}}, _conn) do
     [sb, bb]

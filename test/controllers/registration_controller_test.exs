@@ -10,7 +10,7 @@ defmodule Poker.RegistrationControllerTest do
   test "POST /api/v1/registrations - create a new user and get back a token", %{ conn: conn } do
     payload = %{
       "data" => %{
-        "type" => "user",
+        "type" => "users",
         "attributes" => %{}
       }
     }

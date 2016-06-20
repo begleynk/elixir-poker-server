@@ -13,6 +13,10 @@ defmodule Poker.SeatView do
   has_one :table,
     serializer: TableView
 
+  def type do
+    "seats"
+  end
+
   def id(seat, _conn) do
     seat.id
   end

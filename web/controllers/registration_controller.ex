@@ -5,7 +5,7 @@ defmodule Poker.RegistrationController do
 
   plug :scrub_params, "data" when action in [:create]
 
-  def create(conn, %{"data" => %{ "type" => "user" }}) do
+  def create(conn, %{"data" => %{ "type" => "users" }}) do
     changeset = User.new_user_changeset
 
     case Repo.insert(changeset) do

@@ -39,13 +39,14 @@ defmodule Poker.TableTest do
   end
 
   test "a player looses their seat if they disconnect" do
-    {:ok, player1} = Player.start("player_id_1")
+    {:ok, player1} = Player.start_link("player_id_1")
     {:ok, table} = Table.start_link(id: "table_id", size: 6, blinds: {20,40})
 
     :ok = player1 |> Player.join_table("table_id", seat: 1)
     assert Table.seat(table, 1).player == "player_id_1"
 
-    player1 |> Process.exit(:kill)
+    Process.unlink(player1)
+    Process.exit(player1, :kill)
 
     :timer.sleep 10 # Sleep just a tiny tiny bit
 
@@ -53,7 +54,7 @@ defmodule Poker.TableTest do
   end
 
   test "a player can leave a table" do
-    {:ok, player1} = Player.start("player_id_1")
+    {:ok, player1} = Player.start_link("player_id_1")
     {:ok, table} = Table.start_link(id: "table_id", size: 6, blinds: {20,40})
 
     :ok = player1 |> Player.join_table("table_id", seat: 1)

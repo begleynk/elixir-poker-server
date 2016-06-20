@@ -50,7 +50,7 @@ defmodule Poker.Mixfile do
       {:gettext, "~> 0.9"},
       {:cowboy, "~> 1.0"},
       {:uuid, "~> 1.1" },
-      {:cors_plug, "~> 1.1"},
+      {:corsica, "~> 0.4"},
       {:gproc, "~> 0.5"},
       {:comeonin, "~> 2.4"},
       {:guardian, "~> 0.12.0"},

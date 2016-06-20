@@ -35,6 +35,8 @@ defmodule Poker.Endpoint do
     key: "_poker_key",
     signing_salt: "c5JEzYI/"
 
-  plug CORSPlug
+  plug Corsica, 
+    origins: ["http://localhost:4200"], 
+    allow_headers: ["accept", "content-type"]
   plug Poker.Router
 end
