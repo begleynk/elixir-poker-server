@@ -18,8 +18,9 @@ defmodule Poker.User do
   def register_user_changeset(params) do
     %User{} 
     |> cast(params, ~w(email password), ~w(username))
-    |> validate_length(:username, min: 1, max: 128)
     |> unique_constraint(:username)
+    |> unique_constraint(:email)
+    |> validate_length(:username, min: 1, max: 128)
     |> validate_format(:email, ~r/@/)
     |> validate_length(:password, min: 8)
     |> encrypt_password

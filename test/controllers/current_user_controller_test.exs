@@ -16,7 +16,7 @@ defmodule Poker.CurrentUserControllerTest do
   end
 
   @tag sign_in: "TheDurr"
-  test "GET /api/v1/current_user - retrieves the information of the current user", %{ conn: conn, user: user } do
+  test "GET /api/v1/users/me - retrieves the information of the current user", %{ conn: conn, user: user } do
     conn = get conn, current_user_path(conn, :index)
 
     assert response_content_type(conn, :json) =~ "charset=utf-8"
@@ -37,5 +37,19 @@ defmodule Poker.CurrentUserControllerTest do
     assert id == user.id |> to_string
     assert username == user.username
     assert email == user.email
+  end
+
+  test "GET /api/v1/users/me - returns an error if not authenticated", %{ conn: conn } do
+    conn = get conn, current_user_path(conn, :index)
+
+    assert response_content_type(conn, :json) =~ "charset=utf-8"
+    assert %{
+      "errors" => [
+        %{
+          "title" => "invalid token",
+          "detail" => "Authentication token missing from request"
+        }
+      ]
+    } = json_response(conn, 403)
   end
 end

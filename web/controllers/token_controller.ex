@@ -25,6 +25,7 @@ defmodule Poker.TokenController do
   def unauthenticated(conn, _) do
     conn
     |> put_status(403)
+    |> put_view(Poker.TokenView)
     |> render("errors.json", errors: invalid_or_missing_token)
   end
 

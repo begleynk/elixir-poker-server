@@ -37,6 +37,6 @@ defmodule Poker.Endpoint do
 
   plug Corsica, 
     origins: ["http://localhost:4200"], 
-    allow_headers: ["accept", "content-type"]
+    allow_headers: ["accept", "content-type", "authorization"]
   plug Poker.Router
 end
