@@ -15,7 +15,7 @@ defmodule Poker.Router do
     pipe_through :api
 
     scope "/v1" do
-      post "/registrations", RegistrationController, :create
+      post "/users", UserController, :create
       post "/tokens", TokenController, :create
 
       # All routes below are authenticated

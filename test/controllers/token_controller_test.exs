@@ -1,27 +1,22 @@
 defmodule Poker.TokenControllerTest do
   use Poker.ConnCase
-
-  alias Poker.{TestHelpers, User, Repo}
+  import Poker.TestHelpers
 
   setup %{conn: conn} do
-    {:ok, conn: conn |> TestHelpers.add_json_api_headers}
+    {:ok, conn: conn |> add_json_api_headers}
   end
 
 
   test "POST /api/v1/session - a user can get an authentication token if they have a valid username and password", %{ conn: conn } do
-    email = Faker.Internet.email
     password = Faker.Lorem.characters(%Range{first: 10, last: 10}) |> to_string
 
-    User.new_user_changeset
-    |> Repo.insert!
-    |> User.register_user_changeset(%{email: email, password: password})
-    |> Repo.update
+    user = insert_user(password: password) 
 
     payload = %{
       "data" => %{
         "type" => "user",
         "attributes" => %{
-          "email" => email,
+          "email" => user.email,
           "password" => password
         }
       }
@@ -67,19 +62,13 @@ defmodule Poker.TokenControllerTest do
   end
 
   test "POST /api/v1/session - an error is returned if the password is incorrect", %{ conn: conn } do
-    email = Faker.Internet.email
-    password = Faker.Lorem.characters(%Range{first: 10, last: 10}) |> to_string
-
-    User.new_user_changeset
-    |> Repo.insert!
-    |> User.register_user_changeset(%{email: email, password: password})
-    |> Repo.update
+    user = insert_user
 
     payload = %{
       "data" => %{
         "type" => "user",
         "attributes" => %{
-          "email" => email,
+          "email" => user.email,
           "password" => "totallythewrongpasswordyo"
         }
       }

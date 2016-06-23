@@ -15,12 +15,8 @@ defmodule Poker.User do
   @required_fields ~w()
   @optional_fields ~w(email username password)
 
-  def new_user_changeset do
-    cast(%User{}, %{ username: random_username }, @required_fields, @optional_fields)
-  end
-
-  def register_user_changeset(%User{id: id} = user, params) when id != nil do
-    user
+  def register_user_changeset(params) do
+    %User{} 
     |> cast(params, ~w(email password), ~w(username))
     |> validate_length(:username, min: 1, max: 128)
     |> unique_constraint(:username)

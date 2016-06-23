@@ -17,10 +17,8 @@ defmodule Poker.TestHelpers do
       password: "testing123"
     }, attrs)
 
-    User.new_user_changeset
+    User.register_user_changeset(changes)
     |> Repo.insert!
-    |> User.register_user_changeset(changes)
-    |> Repo.update!
   end
 
   def add_token_for(conn, user) do

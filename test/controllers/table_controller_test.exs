@@ -17,7 +17,7 @@ defmodule Poker.TableControllerTest do
 
   @tag sign_in: "TheDurr"
   test "GET /api/v1/tables/:id", %{ conn: conn, user: _user } do
-    {:ok, table, table_pid} = Poker.Lobby.create_table(size: 3, blinds: {20, 40})
+    {:ok, table, _table_pid} = Poker.Lobby.create_table(size: 3, blinds: {20, 40})
 
     conn = get conn, table_path(conn, :show, table.id)
 
