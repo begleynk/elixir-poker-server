@@ -12,12 +12,12 @@ defmodule Poker.UserController do
       {:ok, user} ->
         conn
         |> put_status(:created)
-        |> render(Poker.UserView, :show, data: user)
+        |> render(:show, data: user)
 
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> render(Poker.RegistrationView, "error.json", changeset: changeset)
+        |> render("errors.json", errors: changeset)
     end
   end
 end

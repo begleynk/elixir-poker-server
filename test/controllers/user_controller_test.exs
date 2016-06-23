@@ -41,4 +41,30 @@ defmodule Poker.UserControllerTest do
       }
     ] = Repo.all(User)
   end
+
+  test "POST /api/v1/users - gives back error messages", %{ conn: conn } do
+    payload = %{
+      "data" => %{
+        "type" => "users",
+        "attributes" => %{
+          "password" => "supersecret",
+          "email"    => "notAnEmail",
+          "username" => "MahUsername"
+        }
+      }
+    }
+
+    conn = post conn, user_path(conn, :create, payload)
+
+    assert response_content_type(conn, :json) =~ "charset=utf-8"
+    assert %{
+      "errors" => [
+        %{
+          "source" => %{"pointer" => "/data/attributes/email"},
+          "detail" => "Email has invalid format",
+          "title"  => "has invalid format"
+        }
+      ]
+    } = json_response(conn, 422)
+  end
 end

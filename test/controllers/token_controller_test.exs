@@ -53,9 +53,8 @@ defmodule Poker.TokenControllerTest do
     assert %{
       "errors" => [
         %{
-          "status" => "422",
-          "code"   => "user not found",
-          "title"  => "User not found"
+          "title"   => "user not found",
+          "detail"  => "User not found"
         }
       ]
     } = json_response(conn, 422)
@@ -80,10 +79,9 @@ defmodule Poker.TokenControllerTest do
     assert %{
       "errors" => [
         %{
-          "status" => "422",
-          "code"   => "invalid password",
-          "source" => %{ "pointer" => "/data/attributes/password" },
-          "title"  => "The provided password did not match the account"
+          "title"   => "invalid password",
+          "detail"  => "The provided password did not match the account",
+          "source"  => %{ "pointer" => "/data/attributes/password" }
         }
       ]
     } = json_response(conn, 422)

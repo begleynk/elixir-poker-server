@@ -13,42 +13,39 @@ defmodule Poker.TokenController do
       {:error, :not_found} ->
         conn
         |> put_status(422)
-        |> render(:errors, errors: user_not_found_error)
+        |> render("errors.json", errors: user_not_found_error)
 
       {:error, :invalid_password} ->
         conn
         |> put_status(422)
-        |> render(:errors, errors: invalid_password_errors)
+        |> render("errors.json", errors: invalid_password_errors)
     end
   end
 
   def unauthenticated(conn, _) do
     conn
     |> put_status(403)
-    |> render(Poker.TokenView, :errors, errors: invalid_or_missing_token)
+    |> render("errors.json", errors: invalid_or_missing_token)
   end
 
   defp invalid_or_missing_token do
     %{
-      status: "403",
-      code: "invalid token",
-      title: "Authentication token missing from request"
+      title: "invalid token",
+      detail: "Authentication token missing from request"
     }
   end
 
   defp user_not_found_error do
     %{
-      status: "422",
-      code: "user not found",
-      title: "User not found"
+      title: "user not found",
+      detail: "User not found"
     }
   end
 
   defp invalid_password_errors do
     %{
-      status: "422",
-      code: "invalid password",
-      title: "The provided password did not match the account",
+      title: "invalid password",
+      detail: "The provided password did not match the account",
       source: %{ pointer: "/data/attributes/password" }
     }
   end
