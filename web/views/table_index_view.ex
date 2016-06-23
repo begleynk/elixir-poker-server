@@ -11,6 +11,10 @@ defmodule Poker.TableIndexView do
     [sb, bb]
   end
 
+  def type do
+    "table"
+  end
+
   def occupied_seats(table, _conn) do
     Enum.count(table.seats, (&(&1.status !== :empty)))
   end

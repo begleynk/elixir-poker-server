@@ -17,12 +17,14 @@ defmodule Poker.Router do
     scope "/v1" do
       post "/users", UserController, :create
       post "/tokens", TokenController, :create
+      resources "/tables", TableController, only: [:index, :show]
 
       # All routes below are authenticated
       pipe_through :authenticated_api
 
       get "/current_user", CurrentUserController, :index
-      resources "/tables", TableController, only: [:index, :show, :create] do
+
+      resources "/tables", TableController, only: [:create] do
         resources "/seats", SeatController, only: [] do
           patch "/occupier", SeatOccupierController, :edit, as: "occupier"
         end
